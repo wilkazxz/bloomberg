@@ -1,0 +1,991 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MarketNews Terminal</title>
+<style>
+:root{--bg:#000;--p:#070707;--l:#2b2b2b;--t:#e6e6e6;--m:#7d7d7d;--o:#ff9d00;--g:#00e676;--r:#ff3b30;--b:#4da3ff}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--t);font:12px/1.35 Consolas,"Lucida Console",Menlo,monospace;display:flex;flex-direction:column;overflow:hidden}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0,rgba(0,0,0,.18) 1px,transparent 1px,transparent 3px)}
+button,input,select{background:#0d0d0d;color:var(--t);border:1px solid var(--l);padding:3px 8px;font:inherit;border-radius:0}
+button{cursor:pointer;color:var(--o)}button:hover{background:#1c1200}button.on{background:var(--o);color:#000;border-color:var(--o);font-weight:700}
+input{flex:1;min-width:110px}input:focus,select:focus{outline:1px solid var(--o)}
+a{color:var(--t);text-decoration:none}a:hover{color:var(--o);text-decoration:underline}
+#hd{flex:none;background:#000;border-bottom:2px solid var(--o);z-index:5}
+.t1,.t2{display:flex;gap:6px;align-items:center;padding:3px 6px;flex-wrap:wrap}
+.logo{background:var(--o);color:#000;font-weight:900;padding:1px 8px;letter-spacing:2px}.logo i{font-style:normal;font-weight:400}
+.led{color:var(--r);font-size:11px}.led.ok{color:var(--g);animation:bl 1.4s infinite}@keyframes bl{50%{opacity:.35}}
+.spc{flex:1}#clk{color:var(--o)}
+#tabs{display:flex;gap:2px}#tabs button{padding:2px 10px}
+#cfg{display:none;gap:4px;flex-wrap:wrap;padding:3px 6px;border-top:1px solid var(--l);background:#0a0600}#cfg.show{display:flex}
+#tape{overflow:hidden;white-space:nowrap;border-top:1px solid var(--l);background:#050505}
+.tkw{display:inline-block;animation:mq 70s linear infinite;padding:2px 0}#tape:hover .tkw{animation-play-state:paused}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk{margin-right:22px}.tk b{color:var(--o)}
+.bar{display:flex;gap:4px;padding:3px 6px;overflow-x:auto;flex-wrap:nowrap;border-top:1px solid var(--l)}
+#hint{background:#2a1c00;color:#ffd27a;padding:3px 8px;font-size:11px;display:none}
+#toast{position:fixed;top:92px;right:12px;background:var(--o);color:#000;padding:8px 12px;max-width:360px;display:none;z-index:60;font-weight:700;box-shadow:0 0 18px rgba(255,157,0,.5)}
+#main{flex:1;min-height:0;display:grid;gap:2px;padding:2px;grid-template-columns:minmax(250px,1fr) minmax(340px,1.4fr) minmax(400px,1.7fr);grid-template-rows:minmax(0,1.25fr) minmax(0,.9fr) minmax(0,.75fr);grid-template-areas:"rd nw sg" "ht nw sg" "ev nw sg"}
+#pRd{grid-area:rd}#pNw{grid-area:nw}#pSg{grid-area:sg}#pHt{grid-area:ht}#pEv{grid-area:ev}
+.pn{background:var(--p);border:1px solid #3a2a10;display:flex;flex-direction:column;min-height:0;min-width:0}
+.ph{background:linear-gradient(#2e1c00,#140c00);color:var(--o);border-bottom:1px solid var(--o);padding:2px 8px;font-weight:700;letter-spacing:1px;display:flex;justify-content:space-between;gap:6px;font-size:11px;flex:none;align-items:center;flex-wrap:wrap}
+.ph span.s{color:var(--m);font-weight:400}.ph select,.ph button{padding:0 5px;font-size:11px}
+.pb{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#553600 #000}
+.pf{flex:none;color:var(--m);font-size:10px;padding:2px 6px;border-top:1px solid var(--l)}
+/* radar */
+.rdw{position:relative;flex:1;min-height:0;background:radial-gradient(circle,#001a0a 0%,#000 75%)}#cv{position:absolute;inset:0;width:100%;height:100%}
+#lg{height:62px;flex:none;overflow:hidden;color:#00e676;font-size:10px;padding:2px 6px;border-top:1px solid #0a4a22;background:#000;white-space:nowrap;text-shadow:0 0 4px #00e676}
+#lg div{overflow:hidden;text-overflow:ellipsis}#lg .a{color:var(--o)}#lg .x{color:var(--r)}
+/* heat grid */
+#hg{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:2px;padding:2px}
+.tl{border:1px solid #222;padding:3px 5px;cursor:pointer;display:flex;flex-direction:column;transition:outline-color .6s;outline:1px solid transparent}
+.tl b{color:var(--o)}.tl .p{font-size:11px}.tl .c{font-size:11px;font-weight:700}.tl.fu{outline-color:var(--g)}.tl.fd{outline-color:var(--r)}
+.up{color:var(--g)}.dn{color:var(--r)}
+/* signals */
+#sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:3px;padding:3px;align-content:start}
+.sc{border:1px solid #333;background:#080808;padding:4px 6px;font-size:11px;cursor:pointer;position:relative}
+.sc.BUY{border-color:#0b6b3a;box-shadow:inset 0 0 14px rgba(0,230,118,.09)}.sc.SELL{border-color:#7a1f1a;box-shadow:inset 0 0 14px rgba(255,59,48,.09)}.sc.WAIT{opacity:.5}.sc.dn2{opacity:.75}
+.sc.nw{animation:nf 3s}@keyframes nf{from{background:#3a2a00}to{background:#080808}}
+.sh{display:flex;justify-content:space-between;align-items:center;gap:4px}.sh b{color:var(--o);font-size:13px}
+.sd{padding:0 6px;font-weight:900;color:#000}.sd.BUY{background:var(--g)}.sd.SELL{background:var(--r)}.sd.WAIT{background:#555;color:#ddd}
+.px{display:flex;justify-content:space-between;margin:2px 0}.px b{font-size:13px}
+.lv{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px}.lv div{display:flex;justify-content:space-between}.lv i{font-style:normal;color:var(--m)}
+.lv .e b{color:#fff}.lv .t b{color:var(--g)}.lv .z b{color:var(--r)}
+.cb{height:4px;background:#1b1b1b;margin:4px 0 2px}.cb span{display:block;height:100%;background:var(--o)}
+.sw{color:#c9a35a;font-size:10px}.ss{color:var(--m);font-size:10px;margin-top:2px}
+/* news */
+.r{display:grid;grid-template-columns:50px 52px 1fr;gap:6px;padding:3px 6px;border-bottom:1px solid #151515}.r.new{animation:nf 3s}
+.r.hi{border-left:3px solid var(--o)}.tm{color:var(--m);font-size:10px}.tm b{color:var(--o)}
+.tag{font-size:10px;padding:0 4px;height:15px;color:#000;font-weight:700;text-align:center}
+.ID{background:#ff5a5f}.US{background:#4da3ff}.CRYPTO{background:#f7c948}.GLOBAL{background:#7bd88f}
+.src{color:var(--m);font-size:10px}.cs{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:0 6px;border:1px solid var(--l);border-radius:8px;cursor:pointer;white-space:nowrap}.chip img{width:12px;height:12px;border-radius:50%}
+.chip.up{color:var(--g);border-color:var(--g)}.chip.dn{color:var(--r);border-color:var(--r)}.nt{color:var(--m)}.wr{color:#f5a623;border-color:#f5a623}.in{color:var(--b);border-color:var(--b)}
+.why{font-size:10px;color:#c9a35a;margin-top:3px}.tt{font-size:11px;color:#9ad}.tr{color:var(--o);cursor:pointer}.bd{min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:3px;padding:3px 6px;align-items:center}
+#boot{position:fixed;inset:0;background:#000;z-index:99;color:#00e676;padding:20px;transition:opacity .5s;text-shadow:0 0 6px #00e676}#boot pre{margin:0;font:13px/1.5 Consolas,monospace}
+@media(max-width:1000px){body{height:auto;display:block;overflow:auto}#main{display:block}.pn{margin-bottom:2px;height:430px}#pNw{height:620px}#pSg{height:620px}#pRd{height:340px}}
+/* ===== SAHAM IDX ===== */
+#wrap{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#553600 #000}
+#main{flex:none;height:100%;min-height:640px}
+#views{display:flex;gap:2px}
+body.v-saham #main{display:none}body.v-news #idx{display:none}
+#idx{padding:2px;display:flex;flex-direction:column;gap:2px}
+#idx .pn{background:var(--p)}
+#ixSum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px}
+.st{border:1px solid #3a2a10;background:#070707;padding:5px 8px}.st i{display:block;font-style:normal;color:var(--m);font-size:10px}.st b{font-size:17px}.st small{font-size:11px}
+#ixStat{padding:4px 8px;border:1px solid #5a4200;background:#140d00;color:#ffd27a;font-size:11px}#ixStat.err{border-color:#7a1f1a;background:#190604;color:#ff9b93}
+.brd{height:5px;display:flex;margin-top:4px;background:#222}.brd span{display:block;height:100%}
+#ixRow1{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:2px}#ixRow1 .pn{height:520px}
+#ixSig,#ixSell{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:3px;padding:3px;align-content:start}
+.sub{padding:3px 8px;color:var(--o);font-size:11px;border-bottom:1px solid #222}
+.sd.JUAL{background:var(--r)}.sc.JUAL{border-color:#7a1f1a;box-shadow:inset 0 0 14px rgba(255,59,48,.09)}
+#ixRank{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px}#ixRank .pn{height:268px}
+table.t{width:100%;border-collapse:collapse;font-size:11px}table.t td,table.t th{padding:2px 6px;border-bottom:1px solid #151515;text-align:right;white-space:nowrap}
+table.t td:first-child,table.t th:first-child{text-align:left}table.t th{position:sticky;top:0;background:#140c00;color:var(--o);cursor:pointer;font-weight:700}
+table.t tr[data-s]{cursor:pointer}table.t tr[data-s]:hover{background:#1c1200}table.t td b{color:var(--o)}
+#ixSec{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px;padding:2px}
+.se{border:1px solid #222;padding:4px 6px;font-size:11px;cursor:pointer}.se b{display:block;font-size:13px}.se.on{outline:1px solid var(--o)}
+#pAll{height:560px}#ixq{max-width:240px;padding:0 6px;font-size:11px}
+#ixTape{overflow:hidden;white-space:nowrap;border-top:1px solid var(--l);background:#050505}#ixTape .tkw{animation-duration:110s}#ixTape .tk{cursor:pointer}
+#ixMod{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:52;display:none;align-items:center;justify-content:center;padding:16px}#ixMod.show{display:flex}
+#ixBox{width:560px;max-width:100%;max-height:90vh;overflow:auto;background:#070707;border:1px solid var(--o);box-shadow:0 0 30px rgba(255,157,0,.25)}
+#ixBox .in2{padding:8px 12px}.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 14px;margin:8px 0}.kv div{display:flex;justify-content:space-between;border-bottom:1px dotted #222}.kv i{font-style:normal;color:var(--m)}
+@media(max-width:1000px){#wrap{overflow:visible}#main{height:auto;min-height:0}#ixRow1{grid-template-columns:1fr}}
+/* ===== LABA-LABA ===== */
+#spcv{position:fixed;left:0;top:0;pointer-events:none;z-index:55}
+#splog{position:fixed;right:8px;bottom:8px;width:390px;max-width:calc(100vw - 16px);background:rgba(0,6,2,.95);border:1px solid #0a6a30;z-index:56;color:#00e676;font-size:10px;box-shadow:0 0 18px rgba(0,230,118,.18)}
+#splog .h{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 8px;background:#03180b;cursor:pointer;font-weight:700;letter-spacing:1px}
+#splog .h i{font-style:normal;border:1px solid #0a6a30;padding:0 5px;font-size:9px;letter-spacing:0;font-weight:700}#splog .h i.on{background:#00e676;color:#000}
+#splog .b{height:150px;overflow:hidden;padding:3px 8px;display:flex;flex-direction:column;justify-content:flex-end}
+#splog.min .b,#splog.min .ch,#splog.min .in{display:none}#splog.min{width:230px}
+#splog .b div{flex:none;line-height:1.3;word-break:break-word;margin-top:1px}
+#splog .w{color:var(--o)}#splog .x{color:var(--r)}#splog .u{color:var(--b)}
+#splog .ch{display:flex;flex-wrap:wrap;gap:3px;padding:3px 8px 0}#splog .ch button{font-size:10px;padding:0 5px;color:#00e676;border-color:#0a6a30;background:#03120a}
+#splog .in{display:flex;gap:3px;padding:4px 8px 6px}#splog .in input{font-size:11px;padding:2px 6px;border-color:#0a6a30;background:#020a05;color:#cfffe3}#splog .in button{color:#00e676;border-color:#0a6a30}
+</style></head><body>
+<div id="boot"><pre></pre></div>
+<header id="hd">
+<div class="t1"><span class="logo">■ MARKETNEWS <i>TERMINAL</i></span><span class="led" id="led">● OFFLINE</span><span id="views"><button data-v="all">▦ SEMUA</button><button data-v="saham">🇮🇩 SAHAM IDX</button><button data-v="news">📰 BERITA & CRYPTO</button></span><span class="spc"></span><input id="q" placeholder="CMD&gt; cari berita / ticker  &lt;GO&gt;"><span id="clk"></span></div>
+<div class="t2"><div id="tabs"></div><span class="spc"></span><button id="cfgb">⚙ CONFIG</button><button id="bn">🔔 Notifikasi</button><button id="bs">🔊 Suara</button><button id="rf">⟳ SCAN</button><button id="ts">🧪 TES</button><button id="spbt" title="Klik untuk ganti jumlah laba-laba">🕷</button></div>
+<div id="cfg"><input id="kw" placeholder="Filter kata kunci (koma), kosong = semua"><input id="wl" placeholder="Watchlist: BBCA, BTC, ETH (sinyal &amp; alert hanya aset ini)"><input id="nt" placeholder="ntfy topic HP (opsional)"><select id="ma" title="Umur maksimal berita"><option value="1800000">≤ 30 mnt</option><option value="3600000">≤ 1 jam</option><option value="10800000">≤ 3 jam</option><option value="21600000">≤ 6 jam</option><option value="86400000">≤ 24 jam</option></select></div>
+<div id="tape"><div class="tkw" id="tkw"></div></div>
+<div id="ixTape"><div class="tkw" id="ixTk"><span class="tk">IDX: memuat harga saham...</span></div></div>
+<div class="bar" id="mk"></div>
+</header>
+<div id="hint"></div><div id="toast"></div>
+<div id="wrap">
+<div id="idx">
+<div id="ixStat">⏳ Menghubungi sumber data saham IDX...</div>
+<div id="ixSum"></div>
+<div id="ixRow1">
+<section class="pn"><div class="ph"><span>▣ SINYAL SAHAM INDONESIA <span class="s" id="ixSgi"></span></span><span><select id="ixLiq" title="Minimal nilai transaksi hari ini"><option value="1000000000">nilai ≥ 1 M</option><option value="5000000000">nilai ≥ 5 M</option><option value="20000000000">nilai ≥ 20 M</option><option value="100000000000">nilai ≥ 100 M</option></select></span></div>
+<div class="pb"><div class="sub">▲ KANDIDAT BELI</div><div id="ixSig"></div><div class="sub" style="color:#ff3b30">▼ SINYAL JUAL / HINDARI</div><div id="ixSell"></div></div>
+<div class="pf">⚠ Sinyal otomatis dari EMA, MACD, RSI, volume relatif & kata kunci berita. Data tertunda. Entry/SL/TP dibulatkan ke fraksi harga BEI; TP bisa melewati ARA harian (target beberapa hari). Bukan saran investasi.</div></section>
+<section class="pn"><div class="ph"><span>▣ BERITA EMITEN</span><span class="s" id="ixNwi"></span></div><div class="pb" id="ixNews"></div></section>
+</div>
+<div id="ixRank"></div>
+<section class="pn"><div class="ph"><span>▣ PETA SEKTOR</span><span class="s">rata-rata tertimbang kapitalisasi · klik = saring daftar saham</span></div><div id="ixSec"></div></section>
+<section class="pn" id="pAll"><div class="ph"><span>▣ SEMUA SAHAM <span class="s" id="ixAlli"></span></span><input id="ixq" placeholder="cari kode / nama..."></div><div class="pb" id="ixAll"></div><div class="pf">ARA/ARB dihitung untuk papan reguler (ARB 7% s.d. 31 Des 2026). Saham papan pemantauan khusus, IPO baru, atau aksi korporasi bisa berbeda.</div></section>
+</div>
+<div id="main">
+<section class="pn" id="pRd"><div class="ph"><span>▣ RADAR SCANNER</span><span class="s" id="rdi">SCAN 360°</span></div><div class="rdw"><canvas id="cv"></canvas></div><div id="lg"></div></section>
+<section class="pn" id="pNw"><div class="ph"><span>▣ NEWS FEED</span><span class="s" id="nwi"></span></div><div class="pb" id="list"></div><div class="pf">⚠ Sinyal = perkiraan otomatis dari kata kunci berita, bukan saran beli/jual. Cek grafik &amp; fundamental sebelum transaksi.</div></section>
+<section class="pn" id="pSg"><div class="ph"><span>▣ CRYPTO SIGNALS <span class="s" id="sgi"></span></span><span><select id="tf" title="Timeframe"><option>5m</option><option>15m</option><option>1h</option><option>4h</option></select> <select id="mc" title="Minimal confidence"><option value="40">conf ≥40</option><option value="55">conf ≥55</option><option value="70">conf ≥70</option></select> <button id="sww">WAIT</button></span></div><div class="pb"><div id="sg"></div></div><div class="pf">Entry/TP/SL otomatis dari ATR(14) + EMA + RSI + skor berita (hasil filter). TP1 = 1.5R, TP2 = 3R. Setelah TP1, SL geser ke entry. Bukan saran investasi, selalu pakai manajemen risiko.</div></section>
+<section class="pn" id="pHt"><div class="ph"><span>▣ CRYPTO HEAT GRID</span><span class="s">24H · klik = filter berita</span></div><div class="pb"><div id="hg"></div></div></section>
+<section class="pn" id="pEv"><div class="ph"><span>▣ EVENT &amp; RADAR 6 JAM</span></div><div class="pb"><div class="chips" id="evbar"></div><div class="chips" id="radar"></div></div></section>
+</div>
+</div>
+<div id="ixMod"><div id="ixBox"></div></div>
+<footer class="pf" id="ft" style="background:#000;border-top:1px solid var(--o)">memuat...</footer>
+<script>
+// Publisher feeds: Google News RSS untuk media nasional yang tidak selalu menyediakan RSS publik stabil.
+var ID_MEDIA=[
+ ["Kompas.com","kompas.com"],["Detik.com","detik.com"],["CNN Indonesia","cnnindonesia.com"],
+ ["Tempo","tempo.co"],["Antara","antaranews.com"],["Bisnis.com","bisnis.com"],
+ ["Kontan","kontan.co.id"],["Liputan6","liputan6.com"],["Republika","republika.co.id"],
+ ["Okezone","okezone.com"],["Suara.com","suara.com"],["Tribunnews","tribunnews.com"],
+ ["Jawa Pos","jawapos.com"],["Kumparan","kumparan.com"],["IDN Times","idntimes.com"],
+ ["Katadata","katadata.co.id"],["Investor.id","investor.id"],["IDX Channel","idxchannel.com"],
+ ["SINDOnews","sindonews.com"],["VIVA","viva.co.id"],["Tirto","tirto.id"],
+ ["Media Indonesia","mediaindonesia.com"],["Bisnis Indonesia","bisnisindonesia.id"],
+ ["BeritaSatu","beritasatu.com"],["Pikiran Rakyat","pikiran-rakyat.com"],
+ ["Suara Merdeka","suaramerdeka.com"],["RRI","rri.co.id"],["TVOneNews","tvonenews.com"],
+ ["CNBC Indonesia","cnbcindonesia.com"]
+];
+var ID_GN=ID_MEDIA.map(function(x){return ["GN • "+x[0],"ID","https://news.google.com/rss/search?q="+encodeURIComponent("site:"+x[1]+" Indonesia")+"&hl=id&gl=ID&ceid=ID:id"]});
+var ID_TOPICS=[
+ ["GN Indonesia Nasional","Indonesia berita nasional terkini"],["GN Indonesia Politik","Indonesia politik pemerintah DPR"],
+ ["GN Indonesia Ekonomi","Indonesia ekonomi bisnis industri"],["GN Indonesia Teknologi","Indonesia teknologi startup digital"],
+ ["GN Indonesia Daerah","berita daerah Indonesia"],["GN Indonesia Hukum","Indonesia hukum kriminal"],
+ ["GN Indonesia Pendidikan","Indonesia pendidikan kampus"],["GN Indonesia Kesehatan","Indonesia kesehatan"],
+ ["GN Indonesia Olahraga","Indonesia olahraga sepak bola"],["GN Indonesia Hiburan","Indonesia hiburan selebritas"],
+ ["GN Indonesia Internasional","berita internasional Indonesia"],["GN IHSG Saham","IHSG saham BEI emiten"],
+ ["GN Rupiah BI","rupiah Bank Indonesia suku bunga"],["GN OJK Keuangan","OJK perbankan keuangan Indonesia"],
+ ["GN Komoditas Indonesia","harga emas minyak batu bara nikel Indonesia"]
+];
+var ID_TOPIC_FEEDS=ID_TOPICS.map(function(x){return [x[0],"ID","https://news.google.com/rss/search?q="+encodeURIComponent(x[1])+"&hl=id&gl=ID&ceid=ID:id"]});
+var F=[["CNBC Indonesia","ID","https://www.cnbcindonesia.com/market/rss"],
+["CNBC Indonesia Invest","ID","https://www.cnbcindonesia.com/investment/rss"],
+["Kontan","ID","https://investasi.kontan.co.id/rss"],
+["Bisnis.com","ID","https://market.bisnis.com/rss"],
+["Detik Finance","ID","https://rss.detik.com/index.php/finance"],
+["Antara Ekonomi","ID","https://www.antaranews.com/rss/ekonomi.xml"],
+["CNN Indonesia Ekonomi","ID","https://www.cnnindonesia.com/ekonomi/rss"],
+["IDX Channel","ID","https://www.idxchannel.com/rss"],
+["Liputan6 Bisnis","ID","https://feed.liputan6.com/rss/bisnis"],
+["Tempo Bisnis","ID","https://rss.tempo.co/bisnis"],
+["Republika Ekonomi","ID","https://www.republika.co.id/rss/ekonomi"],
+["Okezone Ekonomi","ID","https://sindikasi.okezone.com/index.php/rss/11/RSS2.0"],
+["CNBC Markets","US","https://www.cnbc.com/id/20910258/device/rss/rss.html"],
+["CNBC Finance","US","https://www.cnbc.com/id/10000664/device/rss/rss.html"],
+["MarketWatch","US","https://feeds.content.dowjones.io/public/rss/mw_topstories"],
+["MarketWatch Live","US","https://feeds.content.dowjones.io/public/rss/mw_realtimeheadlines"],
+["WSJ Markets","US","https://feeds.a.dj.com/rss/RSSMarketsMain.xml"],
+["Yahoo Finance","US","https://finance.yahoo.com/news/rssindex"],
+["Investing.com","US","https://www.investing.com/rss/news.rss"],
+["Seeking Alpha","US","https://seekingalpha.com/market_currents.xml"],
+["Nasdaq","US","https://www.nasdaq.com/feed/rssoutbound?category=Markets"],
+["Federal Reserve","US","https://www.federalreserve.gov/feeds/press_all.xml"],
+["CNN Business","US","http://rss.cnn.com/rss/money_latest.rss"],
+["Bloomberg Markets","GLOBAL","https://feeds.bloomberg.com/markets/news.rss"],
+["Bloomberg Economics","GLOBAL","https://feeds.bloomberg.com/economics/news.rss"],
+["BBC Business","GLOBAL","https://feeds.bbci.co.uk/news/business/rss.xml"],
+["Guardian Business","GLOBAL","https://www.theguardian.com/business/rss"],
+["FXStreet","GLOBAL","https://www.fxstreet.com/rss/news"],
+["OilPrice","GLOBAL","https://oilprice.com/rss/main"],
+["CoinDesk","CRYPTO","https://www.coindesk.com/arc/outboundfeeds/rss/"],
+["Cointelegraph","CRYPTO","https://cointelegraph.com/rss"],
+["Decrypt","CRYPTO","https://decrypt.co/feed"],
+["The Block","CRYPTO","https://www.theblock.co/rss.xml"],
+["CryptoSlate","CRYPTO","https://cryptoslate.com/feed/"],
+["Bitcoin Magazine","CRYPTO","https://bitcoinmagazine.com/feed"],
+["CryptoPotato","CRYPTO","https://cryptopotato.com/feed/"],
+["Blockworks","CRYPTO","https://blockworks.co/feed"],
+["GN IHSG","ID","https://news.google.com/rss/search?q=IHSG+saham+when:1d&hl=id&gl=ID&ceid=ID:id"],
+["GN Rupiah","ID","https://news.google.com/rss/search?q=rupiah+OR+BI+rate+OR+obligasi+when:1d&hl=id&gl=ID&ceid=ID:id"],
+["GN Emiten","ID","https://news.google.com/rss/search?q=emiten+OR+BEI+OR+OJK+when:1d&hl=id&gl=ID&ceid=ID:id"],
+["GN Wall Street","US","https://news.google.com/rss/search?q=Wall+Street+stocks+OR+Nasdaq+OR+S%26P+500+when:1d&hl=en&gl=US&ceid=US:en"],
+["GN The Fed","US","https://news.google.com/rss/search?q=Federal+Reserve+OR+inflation+OR+rate+cut+when:1d&hl=en&gl=US&ceid=US:en"],
+["GN Bitcoin","CRYPTO","https://news.google.com/rss/search?q=bitcoin+OR+ethereum+OR+crypto+when:1d&hl=en&gl=US&ceid=US:en"],
+["GN Gold Oil","GLOBAL","https://news.google.com/rss/search?q=gold+price+OR+oil+price+OR+OPEC+when:1d&hl=en&gl=US&ceid=US:en"],
+["GN Breaking Market","GLOBAL","https://news.google.com/rss/search?q=breaking+markets+stocks+when:1d&hl=en&gl=US&ceid=US:en"]
+].concat(ID_GN,ID_TOPIC_FEEDS);
+var EVERY=45,PX=[function(u){return 'https://api.allorigins.win/raw?disableCache=true&url='+encodeURIComponent(u)},function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u)},function(u){return 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)},function(u){return 'https://thingproxy.freeboard.io/fetch/'+u}];
+var items=[],seen={},seeded={},ok={},cat='SEMUA',unread=0,cats=['SEMUA','ID','US','CRYPTO','GLOBAL'],ls=localStorage,$=function(i){return document.getElementById(i)};
+var sound=ls.s!=='0';$('kw').value=ls.kw||'';$('nt').value=ls.nt||'';$('wl').value=ls.wl||'';
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function hm(t){var d=new Date(t),n=new Date(),h=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);return d.toDateString()===n.toDateString()?h:d.getDate()+'/'+(d.getMonth()+1)+' '+h}
+function row(o,nw){var g=o.sg||{a:[],why:[]};return '<div class="r'+(nw?' new':'')+(g.ev&&g.ev.some(function(v){return v.hi})?' hi':'')+'"><span class="tm"><b>'+ago(o.time)+'</b><br>'+hm(o.time)+'</span><span class="tag '+o.cat+'">'+o.cat+'</span><div class="bd"><a href="'+esc(o.link)+'" target="_blank" rel="noopener">'+esc(o.title)+'</a><div class="src">'+esc(o.src)+(o.cat!=='ID'&&o.id?' · <a class="tr" data-i="'+o.id+'">terjemahkan</a>':'')+'</div><div class="tt"></div>'+(g.ev&&g.ev.length?'<div class="cs">'+g.ev.map(evb).join('')+'</div>':'')+(g.a.length?'<div class="cs">'+g.a.map(chip).join('')+'</div>':'')+(g.why.length?'<div class="why">💡 '+esc(g.why.join(' • '))+'</div>':'')+'</div></div>'}
+function render(){var q=$('q').value.toLowerCase();var f=items.filter(function(o){return Date.now()-o.time<=maxAge()&&(cat==='SEMUA'||o.cat===cat)&&(!q||o.title.toLowerCase().indexOf(q)>-1||(o.ks||'').indexOf(q)>-1)});$('nwi').textContent=f.length+' berita';$('list').innerHTML=f.slice(0,300).map(function(o){return row(o)}).join('')||'<div class="src" style="padding:20px;color:#00e676">⏳ Scanning semua sumber... biasanya 5-15 detik. Berita muncul sendiri.</div>';rchips()}
+$('tabs').innerHTML=cats.map(function(c,i){return '<button data-c="'+c+'"'+(c===cat?' class="on"':'')+'>'+(i+1)+' '+c+'</button>'}).join('');
+function setCat(c){cat=c;[].forEach.call($('tabs').children,function(b){b.className=b.dataset.c===c?'on':''});render()}
+$('tabs').onclick=function(e){var c=e.target.dataset.c;if(!c)return;setCat(c)};
+document.addEventListener('keydown',function(e){var t=(e.target.tagName||'');if(t==='INPUT'||t==='SELECT'||e.ctrlKey||e.metaKey||e.altKey)return;var n=+e.key;if(n>=1&&n<=5)setCat(cats[n-1]);if(e.key==='/'){e.preventDefault();$('q').focus()}});
+$('q').oninput=render;$('kw').oninput=function(){ls.kw=$('kw').value;compute();renderSig()};$('nt').oninput=function(){ls.nt=$('nt').value.trim()};
+$('cfgb').onclick=function(){$('cfg').classList.toggle('show')};
+var AC;function beep(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();var o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.frequency.value=880;g.gain.value=.15;o.start();o.stop(AC.currentTime+.15)}catch(e){}}
+function sb(){$('bs').className=sound?'on':'';$('bs').textContent=sound?'🔊 Suara ON':'🔇 Suara OFF'}
+$('bs').onclick=function(){sound=!sound;ls.s=sound?'1':'0';sb();if(sound)beep()};sb();
+function sn(){var g=window.Notification&&Notification.permission==='granted';$('bn').className=g?'on':'';$('bn').textContent=g?'🔔 Notif ON':'🔔 Aktifkan notif'}
+$('bn').onclick=function(){if(window.Notification)Notification.requestPermission().then(function(){sn();hint()})};sn();
+function match(t){var k=$('kw').value.split(',').map(function(x){return x.trim().toLowerCase()}).filter(Boolean);return!k.length||k.some(function(x){return t.toLowerCase().indexOf(x)>-1})}
+function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t.h);t.h=setTimeout(function(){t.style.display='none'},6000)}
+function notify(title,body,link){if(sound)beep();toast(body);if(window.Notification&&Notification.permission==='granted'){try{var n=new Notification(title,{body:body});if(link)n.onclick=function(){window.open(link)}}catch(e){}}
+ if(ls.nt){try{var h={};if(link)h.Click=link;fetch('https://ntfy.sh/'+encodeURIComponent(ls.nt),{method:'POST',body:title+' '+body,headers:h})}catch(e){}}}
+function alertNew(o,force){if(!force&&!pass(o))return;unread++;document.title='('+unread+') MarketNews';rdPing('#ff9d00');logl('[ALERT] '+o.src+' :: '+o.title.slice(0,70),'a');notify('['+o.cat+'] '+o.src,sg(o)+o.title,o.link)}
+document.onvisibilitychange=function(){if(!document.hidden){unread=0;document.title='MarketNews Terminal'}};
+/*ENGINE*/
+var uid=0,A=[],TY={};
+function esr(x){return x.replace(/[.*+?^${}()|[\]\\&\/]/g,'\\$&')}
+function add(t,k,al){TY[k]=t;A.push({t:t,k:k,re:new RegExp('(^|[^a-z0-9])('+al.map(esr).join('|')+')(?![a-z0-9])')})}
+[['c','BTC',['bitcoin','btc']],['c','ETH',['ethereum','eth','ether']],['c','SOL',['solana']],['c','XRP',['xrp','ripple']],['c','BNB',['bnb','binance coin']],['c','DOGE',['dogecoin','doge']],['c','ADA',['cardano']],['c','AVAX',['avalanche','avax']],['c','LINK',['chainlink']],['c','TON',['toncoin']],['c','SHIB',['shiba inu','shib']],['c','PEPE',['pepe']],['c','TRX',['tron','trx']],['c','LTC',['litecoin']],['c','USDT',['tether','usdt']],['c','SUI',['sui network']],['c','DOT',['polkadot']],['c','NEAR',['near protocol']],['c','ARB',['arbitrum']],['c','INJ',['injective']],['c','FET',['fetch.ai','artificial superintelligence alliance']],
+['i','BBCA',['bbca','bank bca','bca']],['i','BBRI',['bbri','bank bri','bri']],['i','BMRI',['bmri','bank mandiri','mandiri']],['i','BBNI',['bbni','bni']],['i','BRIS',['bris','bank syariah indonesia']],['i','TLKM',['tlkm','telkom']],['i','ASII',['asii','astra international']],['i','GOTO',['goto','gojek tokopedia']],['i','BREN',['bren','barito renewables']],['i','AMMN',['ammn','amman mineral']],['i','ADRO',['adro','adaro']],['i','ANTM',['antm','aneka tambang','antam']],['i','UNVR',['unvr','unilever indonesia']],['i','ICBP',['icbp','indofood cbp']],['i','INDF',['indf','indofood']],['i','MDKA',['mdka','merdeka copper']],['i','PGAS',['pgas','pgn']],['i','PTBA',['ptba','bukit asam']],['i','ITMG',['itmg','indo tambangraya']],['i','MEDC',['medc','medco']],['i','CPIN',['cpin','charoen pokphand indonesia']],['i','BRPT',['brpt','barito pacific']],['i','TPIA',['tpia','chandra asri']],['i','KLBF',['klbf','kalbe']],['i','SMGR',['smgr','semen indonesia']],['i','INCO',['inco','vale indonesia']],['i','HRUM',['hrum','harum energy']],['i','BSDE',['bsde','bumi serpong']],['i','CTRA',['ctra','ciputra']],['i','EXCL',['excl','xl axiata']],['i','ISAT',['isat','indosat']],['i','NCKL',['nckl','trimegah']],['i','MBMA',['mbma','merdeka battery']],['i','BRMS',['brms','bumi resources minerals']],['i','ARTO',['arto','bank jago']],['i','AALI',['aali','astra agro']],['i','LSIP',['lsip','london sumatra']],['i','BBTN',['bbtn','bank btn']],
+['u','AAPL',['apple','aapl']],['u','NVDA',['nvidia','nvda']],['u','TSLA',['tesla','tsla']],['u','MSFT',['microsoft','msft']],['u','AMZN',['amazon','amzn']],['u','GOOGL',['alphabet','google','googl']],['u','META',['meta platforms','facebook']],['u','COIN',['coinbase']],['u','MSTR',['microstrategy','mstr']],['u','AMD',['amd']],['u','NFLX',['netflix']],['u','JPM',['jpmorgan']],['u','BABA',['alibaba']],
+['x','IHSG',['ihsg','indeks harga saham gabungan','jakarta composite']],['x','SPX',['s&p 500','s&p500']],['x','NASDAQ',['nasdaq']],['x','DOW',['dow jones']],['x','EMAS',['emas','gold','xau']],['x','MINYAK',['minyak','oil','brent','crude','wti']],['x','BATUBARA',['batu bara','batubara','coal']],['x','NIKEL',['nikel','nickel']],['x','CPO',['cpo','sawit','palm oil']],['x','USD',['dxy','dollar index','indeks dolar','dolar as','us dollar']],['x','RUPIAH',['rupiah','usd/idr']]
+].forEach(function(x){add(x[0],x[1],x[2])});
+function mk(l){return new RegExp('(^|[^a-z])('+l.slice().sort(function(a,b){return b.length-a.length}).map(esr).join('|')+')(?![a-z])','g')}
+var PR=mk(['naik','melonjak','menguat','meroket','rekor','laba naik','untung','dividen','buyback','rally','surge','surges','soar','soars','jump','jumps','gain','gains','record high','all-time high','approve','approved','inflow','upgrade','beat','beats','optimis','rebound','bullish','menghijau','akuisisi','kontrak baru','tumbuh','positif','breakout','partnership','adopsi','adoption','pulih','climb','climbs','rise','rises']),
+NR=mk(['turun','anjlok','melemah','merosot','ambles','rugi','jeblok','crash','plunge','plunges','tumble','tumbles','slump','sink','sinks','sell-off','selloff','drop','drops','fall','falls','decline','loss','losses','hack','hacked','exploit','ban','lawsuit','sued','investigation','penyelidikan','gugatan','outflow','downgrade','miss','misses','bearish','memerah','bangkrut','default','gagal bayar','suspensi','suspend','fraud','penipuan','resesi','recession','liquidation','likuidasi','dump','delisting','pailit','sanksi','sanction','menyusut','tertekan']);
+function cnt(r,x){return(x.match(r)||[]).length}
+var RISK=[['BTC',1],['ETH',1],['IHSG',1],['NASDAQ',1],['SPX',1]];
+function neg(a){return a.map(function(e){return[e[0],-e[1]]})}
+var R=[
+[/rate cuts?|cuts? (interest )?rates?|lower(s|ed)? (interest )?rates?|pangkas suku bunga|penurunan suku bunga|turunkan suku bunga|menurunkan suku bunga|bi rate turun|dovish|pelonggaran moneter/,'Pelonggaran suku bunga biasanya positif untuk saham, crypto & emas',RISK.concat([['BBCA',1],['BBRI',1],['BMRI',1],['BBNI',1],['BSDE',1],['CTRA',1],['EMAS',1],['USD',-1]])],
+[/rate hikes?|raise[sd]? (interest )?rates?|hike[sd]? rates?|naikkan suku bunga|menaikkan suku bunga|kenaikan suku bunga|bi rate naik|hawkish|higher for longer|pengetatan/,'Suku bunga naik/hawkish biasanya menekan saham & crypto, menguatkan dolar',neg(RISK).concat([['BSDE',-1],['CTRA',-1],['USD',1],['RUPIAH',-1]])],
+[/tariffs?|bea masuk|tarif impor|trade war|perang dagang/,'Eskalasi tarif/perang dagang menekan pasar global & rupiah',[['SPX',-1],['NASDAQ',-1],['IHSG',-1],['RUPIAH',-1],['USD',1],['BTC',-1]]],
+[/(inflation|inflasi)[^.]{0,30}(cooler|eases|falls|fell|lower|slows|turun|melandai|mereda|rendah)|(cooler|lower|soft) (cpi|inflation)/,'Inflasi mereda: ruang pangkas bunga terbuka, positif aset berisiko',RISK.concat([['EMAS',1]])],
+[/(inflation|inflasi)[^.]{0,30}(hotter|rises|rose|higher|accelerat|jumps|naik|meningkat|tinggi)|(hot|hotter) (cpi|inflation)/,'Inflasi panas: bunga tinggi bisa bertahan lama, negatif aset berisiko',neg(RISK).concat([['USD',1]])],
+[/etf[^.]{0,30}(inflow|approved|approval|disetujui)|(inflow|approved)[^.]{0,20}etf/,'Arus masuk/persetujuan ETF crypto: positif untuk BTC/ETH',[['BTC',1],['ETH',1],['COIN',1]]],
+[/etf[^.]{0,30}(outflow|rejected|ditolak)|(outflow|rejected)[^.]{0,20}etf/,'Arus keluar/penolakan ETF: negatif untuk BTC/ETH',[['BTC',-1],['ETH',-1],['COIN',-1]]],
+[/(oil|minyak|brent|crude|wti)[^.]{0,40}(rise|rises|rose|surge|jump|climb|gain|naik|melonjak|menguat)/,'Minyak naik: positif emiten migas (MEDC), menekan inflasi',[['MINYAK',1],['MEDC',1],['PGAS',1]]],
+[/(oil|minyak|brent|crude|wti)[^.]{0,40}(fall|falls|fell|drop|slump|plunge|tumble|turun|anjlok|melemah|merosot)/,'Minyak turun: negatif emiten migas, meringankan inflasi',[['MINYAK',-1],['MEDC',-1],['PGAS',-1]]],
+[/(gold|emas|xau)[^.]{0,40}(rise|rises|rose|surge|jump|record|climb|gain|naik|melonjak|menguat|rekor)/,'Emas naik: positif emiten emas (ANTM, MDKA, BRMS)',[['EMAS',1],['ANTM',1],['MDKA',1],['BRMS',1]]],
+[/(gold|emas|xau)[^.]{0,40}(fall|falls|fell|drop|slump|plunge|tumble|turun|anjlok|melemah|merosot)/,'Emas turun: negatif emiten emas',[['EMAS',-1],['ANTM',-1],['MDKA',-1],['BRMS',-1]]],
+[/(coal|batu ?bara|newcastle)[^.]{0,40}(rise|surge|jump|climb|gain|naik|melonjak|menguat)/,'Batu bara naik: positif ADRO, PTBA, ITMG, HRUM',[['BATUBARA',1],['ADRO',1],['PTBA',1],['ITMG',1],['HRUM',1]]],
+[/(coal|batu ?bara|newcastle)[^.]{0,40}(fall|drop|slump|plunge|tumble|turun|anjlok|melemah|merosot)/,'Batu bara turun: negatif ADRO, PTBA, ITMG, HRUM',[['BATUBARA',-1],['ADRO',-1],['PTBA',-1],['ITMG',-1],['HRUM',-1]]],
+[/(nickel|nikel)[^.]{0,40}(rise|surge|jump|climb|gain|naik|melonjak|menguat)/,'Nikel naik: positif INCO, ANTM, MBMA, NCKL',[['NIKEL',1],['INCO',1],['ANTM',1],['MBMA',1],['NCKL',1]]],
+[/(nickel|nikel)[^.]{0,40}(fall|drop|slump|plunge|tumble|turun|anjlok|melemah|merosot)/,'Nikel turun: negatif INCO, ANTM, MBMA, NCKL',[['NIKEL',-1],['INCO',-1],['ANTM',-1],['MBMA',-1],['NCKL',-1]]],
+[/(cpo|sawit|palm oil)[^.]{0,40}(rise|surge|jump|naik|melonjak|menguat)/,'CPO naik: positif AALI, LSIP',[['CPO',1],['AALI',1],['LSIP',1]]],
+[/(cpo|sawit|palm oil)[^.]{0,40}(fall|drop|slump|turun|anjlok|melemah|merosot)/,'CPO turun: negatif AALI, LSIP',[['CPO',-1],['AALI',-1],['LSIP',-1]]],
+[/rupiah[^.]{0,30}(melemah|anjlok|tertekan|merosot|weaken|slump|record low)|usd\/idr[^.]{0,20}(naik|rise)/,'Rupiah melemah: menekan IHSG & emiten berutang dolar/importir',[['RUPIAH',-1],['IHSG',-1]]],
+[/rupiah[^.]{0,30}(menguat|rebound|naik|strengthen)/,'Rupiah menguat: positif untuk IHSG',[['RUPIAH',1],['IHSG',1]]],
+[/the fed|fomc|powell|federal reserve|bank indonesia|rapat dewan gubernur/,'Event bank sentral: volatilitas tinggi, tunggu keputusan & arah',[['BTC',0],['SPX',0],['IHSG',0],['USD',0]]]];
+var STOP={};'IHSG BUMN RUPS NEWS CNBC FROM WITH THIS THAT HTTP HTML OPEC FOMC USDT ASEAN KSEI FULL CALL AUTO ATAS OJK LQ45 MSCI FTSE IDXC DANA YANG DARI UANG BARU BISA JADI SAHAM EMITEN DATA PERS NEWS LIVE WALL STREET BREAKING ETF IPO CEO CFO ASIA'.split(' ').forEach(function(k){STOP[k]=1});
+var E=[
+[/unusual market activity|\buma\b|pergerakan harga tidak wajar|aktivitas pasar tidak wajar/,/\bUMA\b/,'UMA','⚠','wr','hxw',0,'UMA: bursa menandai pergerakan harga/volume tidak wajar. Biasanya sangat volatil dan bisa berlanjut ke suspensi'],
+[/(?<!pembukaan |buka |cabut |un)suspensi|(?<!un)suspend|penghentian sementara perdagangan saham/,null,'SUSPENSI','⛔','dn','hx',-1,'Perdagangan saham dihentikan sementara: tidak bisa jual/beli sampai suspensi dibuka'],
+[/pembukaan suspensi|buka suspensi|cabut suspensi|unsuspend|suspensi (dibuka|dicabut)/,null,'BUKA SUSPENSI','🔓','wr','hxw',0,'Suspensi dibuka: harga biasanya sangat volatil di hari pertama'],
+[/auto reject atas/,/\bARA\b/,'ARA','🚀','up','hx',1,'Naik sampai batas maksimal harian (auto reject atas)'],
+[/auto reject bawah/,/\bARB\b/,'ARB','🔻','dn','hx',-1,'Turun sampai batas maksimal harian (auto reject bawah)'],
+[/full call auction|papan pemantauan khusus/,/\bFCA\b/,'FCA / PEMANTAUAN KHUSUS','⚠','wr','hxw',-1,'Masuk papan pemantauan khusus (full call auction): likuiditas rendah, harga bisa liar'],
+[/notasi khusus|diberi notasi/,null,'NOTASI KHUSUS','🏷','wr','hxw',-1,'Bursa memberi notasi khusus: ada kondisi perusahaan yang perlu diwaspadai, cek keterbukaan informasi'],
+[/delisting|dihapus dari bursa/,null,'DELISTING','☠','dn','hx3',-1,'Delisting: saham dikeluarkan dari bursa, risiko sangat tinggi'],
+[/trading halt|penghentian perdagangan sementara|perdagangan (di)?hentikan sementara/,null,'TRADING HALT','🛑','dn','h3',-1,'Perdagangan bursa dihentikan sementara karena IHSG turun tajam'],
+[/rights? issue|hmetd/,null,'RIGHT ISSUE','📄','wr','xw',0,'Right issue: ada dilusi kepemilikan, cek tujuan dana & harga tebus'],
+[/(?<!reverse )stock split|pemecahan (nilai nominal|saham)/,null,'STOCK SPLIT','✂','up','x',1,'Stock split: harga per saham lebih murah, likuiditas biasanya naik, sering disambut positif'],
+[/reverse (stock )?split|penggabungan nilai nominal/,null,'REVERSE SPLIT','✂','wr','xw',0,'Reverse split: sering dilakukan saham harga rendah, cek alasan & tren'],
+[/dividen|dividend|cum date|cum dividen/,null,'DIVIDEN','💰','up','x',1,'Dividen: harga cenderung naik menjelang cum date dan turun saat ex date'],
+[/buyback|buy back|pembelian kembali saham/,null,'BUYBACK','🔁','up','x',1,'Buyback: emiten membeli sahamnya sendiri, sinyal manajemen menilai harga murah & menopang harga'],
+[/\bipo\b|penawaran umum perdana|listing perdana|pencatatan perdana/,null,'IPO','🆕','in','x',0,'IPO/saham baru: volatilitas hari-hari awal biasanya tinggi'],
+[/akuisisi|tender offer|\bmto\b|go[- ]private|caplok|merger|take ?over|acquires?|acquired|acquisition/,null,'AKUISISI / MERGER','🤝','in','',0,'Aksi akuisisi/merger: saham target biasanya naik, pembeli bisa tertekan'],
+[/pkpu|pailit|gagal bayar|default|bangkrut|bankrupt/,null,'PKPU / GAGAL BAYAR','☠','dn','hx3',-1,'Risiko gagal bayar/kebangkrutan: sangat negatif'],
+[/(rekomendasi|rating)[^.]{0,20}(beli|buy|overweight)|target (harga|price)[^.]{0,20}(naik|raised|dinaikkan)|upgrade[sd]?|buy rating|overweight/,null,'REKOMENDASI BELI','📊','up','x',1,'Analis/sekuritas merekomendasikan beli atau menaikkan target harga'],
+[/(rekomendasi|rating)[^.]{0,20}(jual|sell|underweight)|target (harga|price)[^.]{0,20}(turun|cut|diturunkan)|downgrade[sd]?|sell rating|underweight/,null,'REKOMENDASI JUAL','📊','dn','x',-1,'Analis/sekuritas merekomendasikan jual atau memangkas target harga'],
+[/net buy asing|asing (borong|net buy|masuk)|foreign (net )?buy|inflow asing/,null,'ASING BELI','🌏','up','x',1,'Investor asing net buy: aliran dana masuk, biasanya menopang harga'],
+[/net sell asing|asing (jual|net sell|keluar|kabur)|foreign (net )?sell|outflow asing/,null,'ASING JUAL','🌏','dn','x',-1,'Investor asing net sell: aliran dana keluar, biasanya menekan harga'],
+[/\bmsci\b|ftse|lq45|idx30|rebalanc/,null,'INDEKS / REBALANCING','📋','in','x',0,'Perubahan indeks memicu aliran dana pasif: beli jika masuk, jual jika keluar'],
+[/\brups\b|rapat umum pemegang saham/,null,'RUPS','📋','in','x',0,'RUPS: cek agenda (dividen, right issue, pergantian direksi)'],
+[/(listing|listed|will list|akan listing|dilisting)[^.]{0,40}(binance|coinbase|upbit|bithumb|okx|bybit)|(binance|coinbase|upbit|bithumb|okx|bybit)[^.]{0,30}(listing|lists|to list)/,null,'LISTING EXCHANGE','🆕','up','',1,'Listing di exchange besar sering memicu lonjakan harga jangka pendek'],
+[/(binance|coinbase|upbit|bithumb|okx|bybit|kraken)[^.]{0,30}delist|delist[^.]{0,30}(token|coin)/,null,'DELIST EXCHANGE','☠','dn','h',-1,'Delist dari exchange: biasanya harga jatuh & likuiditas hilang'],
+[/token unlock|unlocks?[^.]{0,15}token|vesting/,null,'TOKEN UNLOCK','🔓','wr','w',-1,'Token unlock menambah suplai beredar, sering menekan harga'],
+[/hack|exploit|diretas|dicuri|rug ?pull|drained/,null,'HACK / EXPLOIT','☠','dn','h',-1,'Peretasan/eksploitasi: biasanya sangat negatif untuk koin/platform terkait'],
+[/\bsec\b[^.]{0,20}(sues?|lawsuit|charges|gugat)|(lawsuit|gugatan)[^.]{0,20}\bsec\b/,null,'GUGATAN SEC','⚖','dn','h',-1,'Gugatan regulator: risiko hukum menekan harga'],
+[/halving/,null,'HALVING','⏳','in','',0,'Halving: pasokan baru berkurang, efek biasanya muncul bertahap'],
+[/(raises?|lifts?|naikkan)[^.]{0,15}(guidance|outlook|forecast)/,null,'GUIDANCE NAIK','📈','up','',1,'Perusahaan menaikkan proyeksi: sinyal positif'],
+[/(cuts?|lowers?|turunkan)[^.]{0,15}(guidance|outlook|forecast)/,null,'GUIDANCE TURUN','📉','dn','',-1,'Perusahaan memangkas proyeksi: sinyal negatif'],
+[/(beats?|exceeds?)[^.]{0,20}(estimates|expectations)/,null,'LABA DI ATAS ESTIMASI','📈','up','',1,'Kinerja lebih baik dari ekspektasi analis'],
+[/(misses|falls short)[^.]{0,20}(estimates|expectations)/,null,'LABA DI BAWAH ESTIMASI','📉','dn','',-1,'Kinerja di bawah ekspektasi analis']];
+function tickers(raw,idx){var o=[],sn={};function p(k){if(!k||STOP[k]||sn[k])return;sn[k]=1;o.push(k)}var m,re;
+ [/\(([A-Z]{4})\)/g,/\b(?:[Ss]aham|[Ee]miten|[Kk]ode|[Tt]icker)\s+(?:PT\s+)?([A-Z]{4})\b/g,/\$([A-Z]{1,5})\b/g].forEach(function(r){while((m=r.exec(raw)))p(m[1])});
+ if(idx&&/[a-z]{3}/.test(raw))(raw.match(/\b[A-Z]{4}\b/g)||[]).forEach(p);return o.slice(0,6)}
+function analyze(ti,de){var raw=ti+' '+(de||'').slice(0,200),t=ti.toLowerCase(),d=(de||'').toLowerCase(),tx2=t+' '+d.slice(0,160),m={},why=[],evs=[],cl=t.split(/[,;:|]| - | – | but | while | namun | sementara | tetapi /),all=2*(cnt(PR,t)-cnt(NR,t))+cnt(PR,d)-cnt(NR,d);
+ A.forEach(function(a){if(!a.re.test(tx2))return;var c=cl.filter(function(x){return a.re.test(x)})[0],b=c?cnt(PR,c)-cnt(NR,c):0;m[a.k]={k:a.k,t:a.t,v:b?b*2:all,dr:1}});
+ function ent(k,v,w){var x=m[k]||(m[k]={k:k,t:TY[k]||(k.length===4?'i':'u'),v:0,dr:1});x.v+=v;if(w)x.w=1}
+ E.forEach(function(e){if(evs.length>=4)return;if(!(e[0].test(tx2)||(e[1]&&e[1].test(raw))))return;var fl=e[5],mag=fl.indexOf('3')>-1?3:2,tk=tickers(raw,fl.indexOf('x')>-1);
+  if(e[2]==='TRADING HALT')tk=['IHSG'];tk.forEach(function(k){ent(k,e[6]*mag,fl.indexOf('w')>-1)});
+  evs.push({l:e[2],i:e[3],c:e[4],hi:fl.indexOf('h')>-1,tk:tk});why.push(e[7])});
+ R.forEach(function(r){if(!r[0].test(tx2))return;why.push(r[1]);r[2].forEach(function(e){ent(e[0],e[1]*2,0)})});
+ var a=Object.keys(m).map(function(k){var x=m[k];return{k:x.k,t:x.t,d:x.v>0?1:x.v<0?-1:0,s:Math.min(3,Math.ceil(Math.abs(x.v)/2)),dr:x.dr||0,w:x.w||0}});
+ a.sort(function(p,q){return q.s-p.s||q.dr-p.dr});return{a:a.slice(0,8),why:why.slice(0,3),ev:evs}}
+function chip(x){var c=x.d>0?'up':x.d<0?'dn':x.w?'wr':'nt',l=x.d>0?'▲ Bullish':x.d<0?'▼ Bearish':x.w?'⚠ Waspada':'● Netral',st=x.d?(x.s>=3?' · kuat':x.s==2?' · sedang':' · lemah'):'',im=x.t==='c'?'<img src="https://assets.coincap.io/assets/icons/'+x.k.toLowerCase()+'@2x.png" onerror="this.remove()">':'';return '<span class="chip '+c+'" data-k="'+x.k+'">'+im+x.k+' '+l+st+'</span>'}
+function sg(o){var g=o.sg||{a:[],ev:[]},e=(g.ev||[]).slice(0,2).map(function(v){return v.l+(v.tk.length?' '+v.tk.slice(0,3).join(','):'')}).join(' · ');return(e?e+' | ':'')+(g.a.length?g.a.slice(0,3).map(function(x){return x.k+(x.d>0?'▲':x.d<0?'▼':'•')}).join(' ')+' | ':'')}
+/*END*/
+/*CLK*/
+var W=function(a,days){var r=[[],[],[],[],[],[],[]];days.forEach(function(d){r[d]=a});return r},DW={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6},FM={};
+var MK=[
+{n:'IDX',f:'🇮🇩',tz:'Asia/Jakarta',w:1,d:(function(){var r=W([[540,720],[810,950]],[1,2,3,4]);r[5]=[[540,690],[840,950]];return r})()},
+{n:'US NYSE/Nasdaq',f:'🇺🇸',tz:'America/New_York',w:1,d:W([[570,960]],[1,2,3,4,5]),pre:[240,570],post:[960,1200]},
+{n:'Tokyo',f:'🇯🇵',tz:'Asia/Tokyo',d:W([[540,690],[750,930]],[1,2,3,4,5])},
+{n:'Hong Kong',f:'🇭🇰',tz:'Asia/Hong_Kong',d:W([[570,720],[780,960]],[1,2,3,4,5])},
+{n:'Shanghai',f:'🇨🇳',tz:'Asia/Shanghai',d:W([[570,690],[780,900]],[1,2,3,4,5])},
+{n:'Singapura',f:'🇸🇬',tz:'Asia/Singapore',d:W([[540,1020]],[1,2,3,4,5])},
+{n:'Korea',f:'🇰🇷',tz:'Asia/Seoul',d:W([[540,930]],[1,2,3,4,5])},
+{n:'India',f:'🇮🇳',tz:'Asia/Kolkata',d:W([[555,930]],[1,2,3,4,5])},
+{n:'Sydney',f:'🇦🇺',tz:'Australia/Sydney',d:W([[600,960]],[1,2,3,4,5])},
+{n:'London',f:'🇬🇧',tz:'Europe/London',d:W([[480,990]],[1,2,3,4,5])},
+{n:'Frankfurt',f:'🇩🇪',tz:'Europe/Berlin',d:W([[540,1050]],[1,2,3,4,5])},
+{n:'Forex',f:'💱',tz:'America/New_York',d:(function(){var r=W([[0,1440]],[1,2,3,4]);r[5]=[[0,1020]];r[0]=[[1020,1440]];return r})()}];
+function zt(tz,now){var f=FM[tz]||(FM[tz]=new Intl.DateTimeFormat('en-US',{timeZone:tz,weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})),p={};f.formatToParts(now).forEach(function(x){p[x.type]=x.value});return{d:DW[p.weekday],t:(+p.hour)*60+(+p.minute)+(+p.second)/60,hm:p.hour+':'+p.minute}}
+function mstate(m,now){var z=zt(m.tz,now),cur=m.d[z.d],i,k,j,best=1e9,r;
+ for(i=0;i<cur.length;i++){if(z.t>=cur[i][0]&&z.t<cur[i][1]){var end=cur[i][1],off=0;while(end===1440*(off+1)&&off<7){var nd=m.d[(z.d+off+1)%7][0];if(nd&&nd[0]===0){end=1440*(off+1)+nd[1];off++}else break}return{open:true,lb:'BUKA',left:(end-z.t)*60,hm:z.hm}}}
+ for(k=0;k<=7;k++){var l=m.d[(z.d+k)%7];for(j=0;j<l.length;j++){var a=k*1440+l[j][0]-z.t;if(a>0&&a<best)best=a}}
+ var lb='TUTUP',day=cur.length&&z.t>cur[0][0]&&z.t<cur[cur.length-1][1];if(day)lb='ISTIRAHAT';
+ if(m.pre&&cur.length&&z.t>=m.pre[0]&&z.t<m.pre[1])lb='PRE-MARKET';if(m.post&&cur.length&&z.t>=m.post[0]&&z.t<m.post[1])lb='AFTER-HOURS';
+ return{open:false,lb:lb,to:best*60,hm:z.hm}}
+function fmtT(sec){sec=Math.max(0,Math.round(sec));var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),x=sec%60;return d?d+'hr '+h+'j':h?h+'j '+m+'m':m+'m '+x+'d'}
+/*CLKEND*/
+var best=0;
+async function xml(u){for(var k=0;k<PX.length;k++){var i=(best+k)%PX.length;try{var c=new AbortController(),h=setTimeout(function(){c.abort()},8000),r=await fetch(PX[i](u),{signal:c.signal});clearTimeout(h);if(r.ok){var t=await r.text();if(/<(item|entry)[\s>]/i.test(t)){best=i;return t}}}catch(e){}}try{var r2=await fetch('https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(u)),j=await r2.json();if(j.items&&j.items.length)return '<rss><channel>'+j.items.map(function(x){return '<item><title><![CDATA['+x.title+']]></title><link>'+esc(x.link).replace(/"/g,'%22')+'</link><pubDate>'+(x.pubDate?x.pubDate.replace(' ','T')+'Z':'')+'</pubDate><description><![CDATA['+(x.description||'')+']]></description></item>'}).join('')+'</channel></rss>'}catch(e){}throw 0}
+function tx(e,n){var x=e.getElementsByTagName(n)[0];return x?x.textContent.trim():''}
+async function poll(f){if(f.b)return;f.b=1;try{var d=new DOMParser().parseFromString(await xml(f[2]),'text/xml'),es=[].slice.call(d.querySelectorAll('item,entry')),fresh=[];
+ es.slice(0,seeded[f[0]]?60:40).forEach(function(e){var l=tx(e,'link');if(!l){var a=e.getElementsByTagName('link')[0];l=a?a.getAttribute('href'):''}var t=tx(e,'title');if(!t||!l||seen[l])return;var p=Date.parse(tx(e,'pubDate')||tx(e,'published')||tx(e,'updated')||tx(e,'dc:date'));if(isNaN(p)||Date.now()-p>maxAge())return;seen[l]=1;var raw=tx(e,'description')||tx(e,'summary')||tx(e,'content'),de=raw.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,300),sgn=analyze(t,de);fresh.push({id:++uid,src:f[0],cat:f[1],title:t,link:l,time:isNaN(p)?Date.now():Math.min(p,Date.now()),sg:sgn,ks:sgn.a.map(function(x){return x.k}).join(' ').toLowerCase()})});
+ ok[f[0]]=1;var first=seeded[f[0]];seeded[f[0]]=1;
+ fresh.forEach(function(o){items.push(o)});items.sort(function(a,b){return b.time-a.time});items.length=Math.min(items.length,1200);try{ls.cache=JSON.stringify(items.slice(0,300))}catch(e){}
+ if(fresh.length)logl('[FEED] '+f[0]+' +'+fresh.length);
+ if(first){var rec=fresh.filter(function(o){return Date.now()-o.time<Math.min(36e5,maxAge())});if(rec.length<fresh.length)render();rec.forEach(function(o){if(rec.length===fresh.length&&(cat==='SEMUA'||o.cat===cat))$('list').insertAdjacentHTML('afterbegin',row(o,1));alertNew(o)})}else render()}
+ catch(e){ok[f[0]]=0;logl('[FEED] '+f[0]+' FAIL','x')}f.b=0;st()}
+function st(){var k=F.filter(function(f){return ok[f[0]]!==undefined}),g=k.filter(function(f){return ok[f[0]]}),b=k.filter(function(f){return!ok[f[0]]}).map(function(f){return f[0]});$('ft').textContent='RSS/AGREGATOR '+g.length+'/'+F.length+' (dicek '+k.length+') | tiap '+EVERY+' dtk | '+items.length+' berita | terbaru: '+(items.length?ago(items[0].time):'-')+(b.length?' | gagal: '+b.join(', '):'')}
+function cycle(){F.forEach(function(f,i){setTimeout(function(){poll(f)},i*120)})}
+function wl(){return $('wl').value.toUpperCase().split(/[ ,]+/).filter(Boolean)}
+function pass(o){var w=wl(),k=$('kw').value.split(',').map(function(x){return x.trim().toLowerCase()}).filter(Boolean);if(!w.length&&!k.length)return true;if(!w.length&&o.sg&&o.sg.ev&&o.sg.ev.some(function(v){return v.hi}))return true;return!!((w.length&&o.sg&&o.sg.a.some(function(x){return w.indexOf(x.k)>-1}))||(k.length&&k.some(function(x){return o.title.toLowerCase().indexOf(x)>-1})))}
+function evb(v){return '<span class="chip '+v.c+'">'+v.i+' '+v.l+(v.tk.length?': '+v.tk.slice(0,6).join(' '):'')+'</span>'}
+function evbar(){var cut=Date.now()-864e5,m={};items.forEach(function(o){if(o.time<cut||!o.sg||!o.sg.ev)return;o.sg.ev.forEach(function(v){if(!v.hi||!v.tk.length)return;var r=m[v.l]||(m[v.l]={l:v.l,i:v.i,c:v.c,t:{}});v.tk.forEach(function(k){r.t[k]=1})})});var a=Object.keys(m).map(function(k){return m[k]});$('evbar').innerHTML=a.length?'<span class="src">KEJADIAN 24 JAM:</span>'+a.map(function(r){return '<span class="chip '+r.c+'">'+r.i+' '+r.l+': '+Object.keys(r.t).slice(0,8).join(' ')+'</span>'}).join(''):'<span class="src">KEJADIAN BURSA (UMA, suspensi, ARA/ARB, FCA...): belum ada</span>'}
+function rchips(){evbar();var cut=Date.now()-6*36e5,m={};items.forEach(function(o){if(o.time<cut||!o.sg)return;o.sg.a.forEach(function(x){if(!x.d)return;var r=m[x.k]||(m[x.k]={k:x.k,u:0,d:0});if(x.d>0)r.u++;else r.d++})});var a=Object.keys(m).map(function(k){return m[k]}).sort(function(p,q){return(q.u+q.d)-(p.u+p.d)}).slice(0,16);$('radar').innerHTML=a.length?'<span class="src">RADAR 6 JAM:</span>'+a.map(function(r){return '<span class="chip '+(r.u>r.d?'up':r.d>r.u?'dn':'nt')+'" data-k="'+r.k+'">'+r.k+' ▲'+r.u+' ▼'+r.d+'</span>'}).join(''):'<span class="src">RADAR: menunggu berita...</span>';buildBlips(m)}
+function chipClick(e){var c=e.target.closest&&e.target.closest('.chip');if(c&&c.dataset.k){$('q').value=$('q').value.toLowerCase()===c.dataset.k.toLowerCase()?'':c.dataset.k.toLowerCase();render();return true}}
+$('radar').onclick=chipClick;
+$('list').onclick=function(e){if(chipClick(e))return;var t=e.target;if(t.className==='tr'){var it=items.filter(function(x){return x.id==t.dataset.i})[0];if(!it)return;t.textContent='menerjemahkan...';fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=id&dt=t&q='+encodeURIComponent(it.title)).then(function(r){return r.json()}).then(function(d){t.closest('.bd').querySelector('.tt').textContent='🇮🇩 '+d[0].map(function(x){return x[0]}).join('');t.remove()}).catch(function(){window.open('https://translate.google.com/?sl=auto&tl=id&text='+encodeURIComponent(it.title)+'&op=translate');t.textContent='terjemahkan'})}};
+$('wl').oninput=function(){ls.wl=$('wl').value;compute();renderSig()};setInterval(rchips,20000);
+function maxAge(){return +$('ma').value||10800000}
+function ago(t){var m=Math.floor((Date.now()-t)/6e4);return m<1?'baru saja':m<60?m+' mnt lalu':Math.floor(m/60)+' jam lalu'}
+$('ma').value=ls.ma||'10800000';$('ma').onchange=function(){ls.ma=$('ma').value;render();cycle();compute()};
+setInterval(render,60000);
+var prevO={},warnO={},LZ=(function(){var z=Intl.DateTimeFormat().resolvedOptions().timeZone;return z==='Asia/Jakarta'?'WIB':z==='Asia/Makassar'?'WITA':z==='Asia/Jayapura'?'WIT':''})();
+function ping(msg){notify('⏰ Jam Bursa',msg)}
+function clock(){var now=Date.now(),h='<span class="chip in" title="Crypto diperdagangkan 24 jam, 7 hari">🪙 Crypto · 24/7 ● BUKA</span>';
+ MK.forEach(function(m){var s=mstate(m,now),c=s.open?'up':s.lb==='TUTUP'?'dn':'wr',tx,tt;
+  if(s.open){tx=s.lb+' · tutup '+fmtT(s.left);tt=m.n+' buka. Tutup dalam '+fmtT(s.left)}
+  else{var nx=new Date(now+s.to*1000),lh=nx.toLocaleString('id-ID',{weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).replace('.',':')+' '+(LZ||'waktu lokal');tx=s.lb+' · buka '+fmtT(s.to);tt=m.n+': '+s.lb+'. Buka lagi '+lh}
+  h+='<span class="chip '+c+'" title="'+tt+'" style="cursor:default">'+m.f+' '+m.n+' '+s.hm+' · '+tx+'</span>';
+  if(m.w){var k=m.n;if(prevO[k]===false&&s.open)ping(k+' sudah BUKA');if(prevO[k]===true&&!s.open&&s.lb==='TUTUP')ping(k+' sudah TUTUP');
+   if(!s.open&&s.to<=300&&s.to>0&&!warnO[k]){warnO[k]=1;ping(k+(s.lb==='ISTIRAHAT'?' sesi 2':'')+' buka 5 menit lagi')}if(s.open)warnO[k]=0;prevO[k]=s.open}});
+ $('mk').innerHTML=h}
+setInterval(clock,1000);clock();
+function hint(){var h=$('hint'),p=window.Notification?Notification.permission:'denied';if(p==='granted'||ls.hd==='1'){h.style.display='none';return}
+ var f=location.protocol==='file:';h.style.display='block';h.innerHTML='<span>'+(f?'🔕 Browser tidak menyimpan izin notifikasi untuk file lokal, jadi popup sistem bisa tidak muncul. Alert tetap lewat toast, suara & judul tab. Untuk notif sistem permanen, buka lewat http://localhost atau hosting.':p==='denied'?'🔕 Notifikasi sistem diblokir browser (ikon gembok → Notifikasi → Izinkan). Alert tetap lewat toast, suara & judul tab.':'👆 Klik tombol 🔔 Aktifkan notif sekali untuk izin notifikasi sistem.')+'</span> <a id="hx" style="cursor:pointer;color:#fff;margin-left:8px">[tutup ✕]</a>';$('hx').onclick=function(){ls.hd='1';h.style.display='none'}}
+function askNotif(){try{if(window.Notification&&Notification.permission==='default'&&ls.na!=='1'){ls.na='1';Notification.requestPermission().then(function(){sn();hint()})}}catch(e){}hint()}
+hint();document.addEventListener('click',askNotif,{once:true});
+
+/* ===== HACKER LOG ===== */
+function logl(m,c){var l=$('lg'),d=document.createElement('div');if(c)d.className=c;d.textContent=new Date().toTimeString().slice(0,8)+' '+m;l.appendChild(d);while(l.children.length>40)l.removeChild(l.firstChild);l.scrollTop=l.scrollHeight}
+
+/* ===== CRYPTO ENGINE ===== */
+var COINS=['BTC','ETH','SOL','XRP','BNB','DOGE','ADA','AVAX','LINK','TON','SHIB','PEPE','TRX','LTC','SUI','DOT','NEAR','ARB','INJ','FET'];
+var PRICE={},KL={},C={},SIG={},REST=['https://api.binance.com','https://data-api.binance.vision','https://api1.binance.com'],hostI=0,firstCmp=1;
+try{SIG=JSON.parse(ls.sig||'{}');Object.keys(SIG).forEach(function(k){if(Date.now()-SIG[k].t>432e5)delete SIG[k]})}catch(e){SIG={}}
+function sv(){try{ls.sig=JSON.stringify(SIG)}catch(e){}}
+function fp(p){if(p==null||isNaN(p))return '--';return p>=100?p.toFixed(2):p>=1?p.toFixed(3):p>=.01?p.toFixed(5):p.toFixed(8)}
+async function bget(p){for(var k=0;k<REST.length;k++){var i=(hostI+k)%REST.length;try{var c=new AbortController(),h=setTimeout(function(){c.abort()},7000),r=await fetch(REST[i]+p,{signal:c.signal});clearTimeout(h);if(r.ok){hostI=i;return await r.json()}}catch(e){}}throw 0}
+function setTick(k,o){var q=PRICE[k]||(PRICE[k]={});var pv=q.p;q.p=o.p;q.c=o.c;q.t=Date.now();q.fl=pv==null?0:o.p>pv?1:o.p<pv?-1:q.fl||0}
+var ws,wsT=0,pollT=0,WSH=['wss://stream.binance.com:9443','wss://data-stream.binance.vision'],wsI=0;
+function conn(){try{var u=WSH[wsI%WSH.length]+'/stream?streams='+COINS.map(function(k){return k.toLowerCase()+'usdt@miniTicker'}).join('/');ws=new WebSocket(u);
+ ws.onopen=function(){logl('[NET] stream binance terhubung','a')};
+ ws.onmessage=function(e){try{var d=JSON.parse(e.data).data;if(!d||!d.s)return;var k=d.s.replace('USDT',''),p=+d.c,o=+d.o;setTick(k,{p:p,c:o?(p-o)/o*100:0});wsT=Date.now()}catch(x){}};
+ ws.onclose=function(){wsI++;setTimeout(conn,3000)};ws.onerror=function(){try{ws.close()}catch(e){}}}catch(e){setTimeout(conn,5000)}}
+async function pollPx(){if(Date.now()-wsT<8000)return;try{var d=await bget('/api/v3/ticker/24hr?symbols='+encodeURIComponent(JSON.stringify(COINS.map(function(k){return k+'USDT'}))));d.forEach(function(x){setTick(x.symbol.replace('USDT',''),{p:+x.lastPrice,c:+x.priceChangePercent})});pollT=Date.now()}catch(e){}}
+function ema(a,n){var k=2/(n+1),e=a[0];for(var i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
+function rsi(c,n){var g=0,l=0,i,d;for(i=1;i<=n;i++){d=c[i]-c[i-1];if(d>0)g+=d;else l-=d}g/=n;l/=n;for(i=n+1;i<c.length;i++){d=c[i]-c[i-1];g=(g*(n-1)+(d>0?d:0))/n;l=(l*(n-1)+(d<0?-d:0))/n}return l===0?100:100-100/(1+g/l)}
+function atr(k,n){var tr=[];for(var i=1;i<k.length;i++)tr.push(Math.max(k[i].h-k[i].l,Math.abs(k[i].h-k[i-1].c),Math.abs(k[i].l-k[i-1].c)));var a=0,j;for(j=0;j<n;j++)a+=tr[j];a/=n;for(j=n;j<tr.length;j++)a=(a*(n-1)+tr[j])/n;return a}
+async function loadKL(){var tf=$('tf').value;await Promise.all(COINS.map(function(k){return bget('/api/v3/klines?symbol='+k+'USDT&interval='+tf+'&limit=120').then(function(d){KL[k]=d.map(function(x){return{h:+x[2],l:+x[3],c:+x[4],v:+x[5]}})}).catch(function(){})}));logl('[SCAN] kline '+tf+' '+Object.keys(KL).length+'/'+COINS.length+' pair dimuat');compute();renderSig()}
+function newsScore(k){var cut=Math.min(maxAge(),216e5),now=Date.now(),sc=0,n=0;items.forEach(function(o){if(!o.sg||now-o.time>cut||!match(o.title))return;o.sg.a.forEach(function(x){if(x.k!==k||!x.d)return;sc+=x.d*x.s*(1-(now-o.time)/cut*.7)*.5;n++})});return{s:Math.max(-3,Math.min(3,sc)),n:n}}
+function shown(){var w=wl().filter(function(x){return COINS.indexOf(x)>-1});return w.length?w:COINS}
+function compute(){var now=Date.now(),mc=+$('mc').value,sh=shown();
+ COINS.forEach(function(k){var kl=KL[k];if(!kl||kl.length<60)return;var pr=PRICE[k],cl=kl.map(function(x){return x.c}),n=cl.length;if(pr&&pr.p)cl[n-1]=pr.p;
+  var p=cl[n-1],e9=ema(cl,9),e21=ema(cl,21),e50=ema(cl,50),r=rsi(cl,14),a=atr(kl,14),tech=0,why=[];
+  if(e9>e21){tech+=1;why.push('EMA9>EMA21')}else{tech-=1;why.push('EMA9<EMA21')}
+  if(p>e50){tech+=.5;why.push('di atas EMA50')}else{tech-=.5;why.push('di bawah EMA50')}
+  if(r<30){tech+=1.2;why.push('RSI '+r.toFixed(0)+' oversold')}else if(r>70){tech-=1.2;why.push('RSI '+r.toFixed(0)+' overbought')}else if(r>=50&&r<=65){tech+=.5;why.push('RSI '+r.toFixed(0))}else if(r<50&&r>=35){tech-=.5;why.push('RSI '+r.toFixed(0))}else why.push('RSI '+r.toFixed(0));
+  var mom=(p-cl[n-6])/cl[n-6]*100;if(Math.abs(mom)>.15){tech+=mom>0?.5:-.5}
+  var vr=0,i;for(i=n-3;i<n;i++)vr+=kl[i].v;vr/=3;var va=0;for(i=n-23;i<n-3;i++)va+=kl[i].v;va/=20;if(va>0&&vr/va>1.5){tech+=mom>0?.5:-.5;why.push('volume spike')}
+  var ns=newsScore(k),score=tech+ns.s;if(ns.n)why.push('news '+(ns.s>0?'+':'')+ns.s.toFixed(1)+' ('+ns.n+')');
+  var side=score>=1.5?'BUY':score<=-1.5?'SELL':'WAIT',conf=Math.min(99,Math.round(Math.abs(score)/4.5*100));
+  C[k]={k:k,p:p,score:score,side:side,conf:conf,rsi:r,atr:a,why:why,ns:ns};
+  var s=SIG[k];if(s&&!s.done&&now-s.t>216e5){s.done=1;s.dt=now;s.status='EXPIRED'}
+  if(side!=='WAIT'&&conf>=mc&&sh.indexOf(k)>-1){var make=!s||(s.done&&now-s.dt>9e5)||(!s.done&&s.side!==side&&conf>=60&&now-s.t>6e5);
+   if(make){var sd=Math.max(1.5*a,p*.004),b=side==='BUY',d=b?1:-1;s=SIG[k]={k:k,side:side,entry:p,sl:p-d*sd,tp1:p+d*sd*1.5,tp2:p+d*sd*3,t:now,conf:conf,status:'AKTIF',done:0,hit1:0,why:why};sv();logl('[SIGNAL] '+side+' '+k+' @'+fp(p)+' conf '+conf+'%','a');rdPing(b?'#00e676':'#ff3b30');if(!firstCmp)notify('📡 '+side+' '+k+'/USDT','Entry '+fp(p)+' | TP1 '+fp(s.tp1)+' | TP2 '+fp(s.tp2)+' | SL '+fp(s.sl)+' | conf '+conf+'%')}}});
+ if(Object.keys(C).length)firstCmp=0}
+function hitMsg(s){logl('[HIT] '+s.k+' '+s.status,s.status.indexOf('SL')>-1?'x':'a');notify('🎯 '+s.k+' '+s.side,s.status+' (entry '+fp(s.entry)+')')}
+function checkHits(){var now=Date.now(),ch=0;Object.keys(SIG).forEach(function(k){var s=SIG[k],q=PRICE[k];if(!q||s.done)return;var b=s.side==='BUY',p=q.p,sl=s.hit1?s.entry:s.sl;
+ if(b?p<=sl:p>=sl){s.done=1;s.dt=now;s.status=s.hit1?'BE (setelah TP1)':'SL KENA';ch=1;hitMsg(s)}
+ else if(b?p>=s.tp2:p<=s.tp2){s.done=1;s.dt=now;s.status='TP2 TERCAPAI ✔';ch=1;hitMsg(s)}
+ else if(!s.hit1&&(b?p>=s.tp1:p<=s.tp1)){s.hit1=1;s.status='TP1 TERCAPAI ✔ (SL→entry)';ch=1;hitMsg(s)}});if(ch){sv();renderSig()}}
+var SWAIT=ls.sw!=='0',lastSig='';
+function renderSig(){var now=Date.now(),sh=shown(),a=[],h='',na=0;
+ sh.forEach(function(k){var c=C[k],s=SIG[k],q=PRICE[k];if(!c)return;var act=s&&(!s.done||now-s.dt<9e5);a.push({k:k,c:c,s:act?s:null,q:q,r:act?(s.done?1:3)+c.conf/100:c.conf/100-(c.side==='WAIT'?1:0)})});
+ a.sort(function(x,y){return y.r-x.r});
+ a.forEach(function(x){var c=x.c,s=x.s,q=x.q,p=q?q.p:c.p,ch=q?q.c:0;if(!s&&!SWAIT)return;
+  if(s){na+=s.done?0:1;var b=s.side==='BUY',pnl=(b?p-s.entry:s.entry-p)/s.entry*100,fresh=now-s.t<6e4;
+   h+='<div class="sc '+s.side+(s.done?' dn2':'')+(fresh?' nw':'')+'" data-k="'+x.k+'"><div class="sh"><b>'+x.k+'/USDT</b><span class="sd '+s.side+'">'+(b?'▲ BUY':'▼ SELL')+'</span></div><div class="px"><b>'+fp(p)+'</b><span class="'+(ch>=0?'up':'dn')+'">'+(ch>=0?'+':'')+ch.toFixed(2)+'%</span></div><div class="lv"><div class="e"><i>ENTRY</i><b>'+fp(s.entry)+'</b></div><div class="z"><i>SL</i><b>'+fp(s.sl)+'</b></div><div class="t"><i>TP1</i><b>'+fp(s.tp1)+'</b></div><div class="t"><i>TP2</i><b>'+fp(s.tp2)+'</b></div></div><div class="cb"><span style="width:'+(c.side===s.side?c.conf:s.conf)+'%"></span></div><div class="sw">'+esc((s.why||c.why).slice(0,5).join(' · '))+'</div><div class="ss">CONF '+(c.side===s.side?c.conf:s.conf)+'% · '+esc(s.status)+' · '+ago(s.t)+' · PnL <span class="'+(pnl>=0?'up':'dn')+'">'+(pnl>=0?'+':'')+pnl.toFixed(2)+'%</span>'+(!s.done&&c.side!==s.side&&c.side!=='WAIT'?' · ⚠ arah berubah':'')+'</div></div>'}
+  else h+='<div class="sc WAIT" data-k="'+x.k+'"><div class="sh"><b>'+x.k+'/USDT</b><span class="sd WAIT">WAIT</span></div><div class="px"><b>'+fp(p)+'</b><span class="'+(ch>=0?'up':'dn')+'">'+(ch>=0?'+':'')+ch.toFixed(2)+'%</span></div><div class="sw">'+esc(c.why.slice(0,4).join(' · '))+'</div><div class="ss">skor '+c.score.toFixed(1)+' · belum ada setup</div></div>'});
+ var sc=$('sg').parentNode.scrollTop;$('sg').innerHTML=h||'<div class="src" style="padding:14px;color:#00e676">⏳ Memuat data pasar Binance... jika tidak muncul, koneksi ke Binance mungkin diblokir ISP/VPN.</div>';$('sg').parentNode.scrollTop=sc;
+ $('sgi').textContent='· '+na+' aktif · filter '+(sh.length===COINS.length?'ALL '+COINS.length:'WL '+sh.length)}
+$('sg').onclick=function(e){var c=e.target.closest('.sc');if(c){var k=c.dataset.k.toLowerCase();$('q').value=$('q').value.toLowerCase()===k?'':k;render()}};
+$('hg').onclick=function(e){var c=e.target.closest('.tl');if(c){var k=c.dataset.k.toLowerCase();$('q').value=$('q').value.toLowerCase()===k?'':k;render()}};
+$('sww').className=SWAIT?'on':'';$('sww').onclick=function(){SWAIT=!SWAIT;ls.sw=SWAIT?'1':'0';this.className=SWAIT?'on':'';renderSig()};
+$('tf').value=ls.tf||'15m';$('tf').onchange=function(){ls.tf=this.value;SIG={};sv();firstCmp=1;loadKL()};
+$('mc').value=ls.mc||'55';$('mc').onchange=function(){ls.mc=this.value;compute();renderSig()};
+/* tape + heat grid (dibangun sekali, diupdate di tempat) */
+(function(){var t=COINS.map(function(k){return '<span class="tk"><b>'+k+'</b> <span class="tp_'+k+'">--</span></span>'}).join('');$('tkw').innerHTML=t+t;
+ $('hg').innerHTML=COINS.map(function(k){return '<div class="tl" id="tl_'+k+'" data-k="'+k+'"><b>'+k+'</b><span class="p">--</span><span class="c">--</span></div>'}).join('')})();
+function updateLive(){var now=Date.now();
+ COINS.forEach(function(k){var q=PRICE[k];if(!q)return;var cls=q.c>=0?'up':'dn',txt=fp(q.p)+' '+(q.c>=0?'+':'')+q.c.toFixed(2)+'%';
+  [].forEach.call(document.getElementsByClassName('tp_'+k),function(e){e.textContent=txt;e.className='tp_'+k+' '+cls});
+  var t=$('tl_'+k);if(t){t.querySelector('.p').textContent=fp(q.p);var c=t.querySelector('.c');c.textContent=(q.c>=0?'+':'')+q.c.toFixed(2)+'%';c.className='c '+cls;var al=Math.min(.8,.1+Math.abs(q.c)/8*.7);t.style.background=q.c>=0?'rgba(0,230,118,'+al*.45+')':'rgba(255,59,48,'+al*.45+')';t.className='tl'+(now-q.t<1200?(q.fl>0?' fu':q.fl<0?' fd':''):'')}});
+ var live=now-wsT<8000,pl=now-pollT<15000;$('led').className='led'+(live||pl?' ok':'');$('led').textContent=live?'● LIVE · WS':pl?'● LIVE · POLL':'● OFFLINE';checkHits()}
+setInterval(updateLive,1000);setInterval(renderSig,2500);setInterval(compute,15000);setInterval(pollPx,4000);setInterval(loadKL,60000);
+conn();pollPx();loadKL();
+
+/* ===== RADAR SCANNER ===== */
+var cv=$('cv'),cx=cv.getContext('2d'),RW=0,RH=0,TAU=Math.PI*2,ang=0,BL={},pings=[],DEC=[];
+for(var di=0;di<16;di++)DEC.push({a:Math.random()*TAU,r:.15+Math.random()*.8,fl:0});
+function rsz(){var r=cv.parentNode.getBoundingClientRect(),d=window.devicePixelRatio||1;RW=r.width;RH=r.height;cv.width=RW*d;cv.height=RH*d;cx.setTransform(d,0,0,d,0,0)}
+window.addEventListener('resize',rsz);rsz();if(window.ResizeObserver)new ResizeObserver(rsz).observe(cv.parentNode);
+function hsh(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h}
+function buildBlips(m){var keep={};Object.keys(m).forEach(function(k){keep[k]=1;var b=BL[k]||(BL[k]={k:k,a:hsh(k)%3600/3600*TAU,rr:.25+(hsh(k+'r')%1000)/1000*.68,fl:0});b.u=m[k].u;b.d=m[k].d;b.sig=0});
+ Object.keys(SIG).forEach(function(k){var s=SIG[k];if(s.done)return;keep[k]=1;var b=BL[k]||(BL[k]={k:k,a:hsh(k)%3600/3600*TAU,rr:.25+(hsh(k+'r')%1000)/1000*.68,fl:0,u:0,d:0});b.sig=s.side==='BUY'?1:-1});
+ Object.keys(BL).forEach(function(k){if(!keep[k])delete BL[k]})}
+function rdPing(c){pings.push({r:0,c:c||'#ff9d00'})}
+var lastT=0,sweepN=0;
+function drawRd(ts){requestAnimationFrame(drawRd);if(!RW||!RH)return;var dt=Math.min(50,ts-(lastT||ts));lastT=ts;var dA=.0013*dt,prev=ang;ang=(ang+dA)%TAU;if(ang<prev){sweepN++;var ks=Object.keys(BL);logl('[SWEEP #'+sweepN+'] '+ks.length+' target · '+ks.filter(function(k){return BL[k].u>BL[k].d}).length+' bull · '+ks.filter(function(k){return BL[k].d>BL[k].u}).length+' bear')}
+ var w=RW/2,h=RH/2,R=Math.min(RW,RH)/2-16;if(R<20)return;cx.clearRect(0,0,RW,RH);
+ cx.lineWidth=1;cx.strokeStyle='rgba(0,255,102,.28)';for(var i=1;i<=4;i++){cx.beginPath();cx.arc(w,h,R*i/4,0,TAU);cx.stroke()}
+ cx.beginPath();cx.moveTo(w-R,h);cx.lineTo(w+R,h);cx.moveTo(w,h-R);cx.lineTo(w,h+R);cx.stroke();
+ cx.strokeStyle='rgba(0,255,102,.5)';for(i=0;i<72;i++){var ta=i*TAU/72,l=i%6===0?8:4;cx.beginPath();cx.moveTo(w+Math.cos(ta)*R,h+Math.sin(ta)*R);cx.lineTo(w+Math.cos(ta)*(R-l),h+Math.sin(ta)*(R-l));cx.stroke()}
+ for(i=0;i<56;i++){var a0=ang-(i+1)*.03,a1=ang-i*.03;cx.beginPath();cx.moveTo(w,h);cx.arc(w,h,R,a0,a1);cx.closePath();cx.fillStyle='rgba(0,255,102,'+((1-i/56)*.3).toFixed(3)+')';cx.fill()}
+ cx.strokeStyle='#00ff66';cx.lineWidth=2;cx.shadowColor='#00ff66';cx.shadowBlur=10;cx.beginPath();cx.moveTo(w,h);cx.lineTo(w+Math.cos(ang)*R,h+Math.sin(ang)*R);cx.stroke();cx.shadowBlur=0;
+ DEC.forEach(function(d){var df=(ang-d.a+TAU*2)%TAU;if(df<dA*1.5)d.fl=1;d.fl=Math.max(0,d.fl-.008);cx.fillStyle='rgba(0,255,102,'+(.12+d.fl*.6)+')';cx.fillRect(w+Math.cos(d.a)*d.rr*R,h+Math.sin(d.a)*d.rr*R,2,2)});
+ cx.font='10px Consolas,monospace';cx.textBaseline='middle';
+ Object.keys(BL).forEach(function(k){var b=BL[k],df=(ang-b.a+TAU*2)%TAU;if(df<dA*1.5)b.fl=1;b.fl=Math.max(0,b.fl-.004);var x=w+Math.cos(b.a)*b.rr*R,y=h+Math.sin(b.a)*b.rr*R,col=b.sig>0||(!b.sig&&b.u>b.d)?'0,230,118':b.sig<0||b.d>b.u?'255,59,48':'255,157,0',sz=2.5+Math.min(4,(b.u+b.d)*.6)+(b.sig?2:0);
+  cx.fillStyle='rgba('+col+','+(.3+b.fl*.7)+')';cx.shadowColor='rgb('+col+')';cx.shadowBlur=b.fl*14;cx.beginPath();if(b.sig){cx.moveTo(x,y-sz-1);cx.lineTo(x+sz+1,y);cx.lineTo(x,y+sz+1);cx.lineTo(x-sz-1,y);cx.closePath()}else cx.arc(x,y,sz,0,TAU);cx.fill();cx.shadowBlur=0;
+  if(b.fl>.05){cx.strokeStyle='rgba('+col+','+b.fl*.8+')';cx.beginPath();cx.arc(x,y,sz+4+(1-b.fl)*10,0,TAU);cx.stroke();cx.fillStyle='rgba(230,255,235,'+Math.min(1,b.fl*1.4)+')';cx.fillText(k+(b.sig?(b.sig>0?' BUY':' SELL'):' ▲'+b.u+'▼'+b.d),x+sz+6,y)}});
+ pings=pings.filter(function(p){p.r+=R*.012;if(p.r>R)return false;cx.strokeStyle=p.c;cx.globalAlpha=1-p.r/R;cx.lineWidth=2;cx.beginPath();cx.arc(w,h,p.r,0,TAU);cx.stroke();cx.globalAlpha=1;return true});
+ cx.fillStyle='#00ff66';cx.fillRect(w-2,h-2,4,4);cx.fillStyle='rgba(0,255,102,.75)';cx.textBaseline='top';cx.fillText('AZ '+(ang*180/Math.PI).toFixed(0).padStart(3,'0')+'°',8,6);cx.textAlign='right';cx.fillText('TARGET '+Object.keys(BL).length,RW-8,6);cx.textAlign='left';cx.textBaseline='bottom';cx.fillStyle='rgba(255,157,0,.8)';cx.fillText(Math.random()>.5?'SCANNING...':'SCANNING..',8,RH-6)}
+requestAnimationFrame(drawRd);
+
+/* ===== BOOT ===== */
+try{var cc=JSON.parse(ls.cache||'[]');cc=cc.filter(function(o){return Date.now()-o.time<864e5});if(cc.length){items=cc;cc.forEach(function(o){seen[o.link]=1;if(o.id>uid)uid=o.id});F.forEach(function(f){seeded[f[0]]=1})}}catch(e){}
+render();
+$('rf').onclick=function(){cycle();loadKL();toast('Scanning semua sumber...')};
+$('ts').onclick=function(){var tt='TES: Saham ABCD kena UMA, BBCA ARA dan Bitcoin melonjak setelah The Fed pangkas suku bunga',o={id:++uid,src:'TES',cat:'US',title:tt,link:'#',time:Date.now(),sg:analyze(tt,''),ks:'btc bbca abcd'};$('list').insertAdjacentHTML('afterbegin',row(o,1));alertNew(o,true)};
+cycle();setInterval(cycle,EVERY*1000);
+function tick(){$('clk').textContent=new Date().toLocaleString('id-ID')}setInterval(tick,1000);tick();
+(function(){var L=['MARKETNEWS TERMINAL v6.0 // BOOT SEQUENCE','LOADING NLP KEYWORD ENGINE ........... OK','MOUNTING '+F.length+' RSS FEEDS ............... OK','OPENING BINANCE STREAM ............. OK','CALIBRATING RADAR ARRAY ............ OK','ACCESS GRANTED >>>'],b=$('boot'),i=0;(function n(){if(i<L.length){b.firstChild.textContent+=L[i++]+'\n';setTimeout(n,160)}else setTimeout(function(){b.style.opacity=0;setTimeout(function(){b.remove()},500)},300)})()})();
+logl('[SYS] terminal online · '+F.length+' feed · '+COINS.length+' pair');
+</script>
+<script>
+/* ================= SAHAM IDX ================= */
+(function(){
+var S=[],MAP={},IHSG=null,IXS=[],SG={},ISIG={},mode='',lastOk=0,delayTxt='',busy=0,first=1,sortK='val',sortD=-1,secF='',prevAR=null;
+try{ISIG=JSON.parse(ls.isig||'{}')}catch(e){ISIG={}}
+var SCAN='https://scanner.tradingview.com/indonesia/scan';
+var COL=['name','description','close','change','change_abs','open','high','low','volume','Value.Traded','relative_volume_10d_calc','market_cap_basic','sector','RSI','EMA10','EMA20','EMA50','MACD.macd','MACD.signal','ATR','Recommend.All','price_52_week_high','price_52_week_low','Perf.W','Perf.1M','update_mode'];
+var KEY=['k','name','p','chg','chga','open','high','low','vol','val','rvol','mcap','sector','rsi','e10','e20','e50','macd','macds','atr','rec','hi52','lo52','pw','pm','um'];
+var BACKUP='BBCA BBRI BMRI BBNI BRIS BBTN ARTO TLKM ISAT EXCL ASII UNTR ADRO PTBA ITMG HRUM INDY BUMI BRMS ANTM INCO MDKA MBMA NCKL AMMN MEDC PGAS ENRG ELSA AKRA UNVR ICBP INDF MYOR CPIN JPFA AMRT MAPI ACES ERAA KLBF SIDO HEAL MIKA SMGR INTP BSDE CTRA PWON SMRA JSMR WIKA PTPP TOWR TBIG GOTO BUKA EMTK SCMA BREN BRPT TPIA CUAN PGEO ADMR INKP TKIM AALI LSIP DSNG'.split(' ');
+var POSTS=[function(u){return u},function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u)}];
+
+async function tfetch(u,o,ms){var c=new AbortController(),h=setTimeout(function(){c.abort()},ms||9000);try{o=o||{};o.signal=c.signal;var r=await fetch(u,o);if(!r.ok)throw 0;return await r.json()}finally{clearTimeout(h)}}
+async function scan(body){for(var i=0;i<POSTS.length;i++){try{var j=await tfetch(POSTS[i](SCAN),{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(body)});if(j&&j.data&&j.data.length)return j.data}catch(e){}}throw 0}
+async function loadTV(){
+ var d=await scan({filter:[{left:'type',operation:'equal',right:'stock'},{left:'exchange',operation:'equal',right:'IDX'}],columns:COL,sort:{sortBy:'Value.Traded',sortOrder:'desc'},range:[0,1500]});
+ var out=d.map(function(r){var o={};KEY.forEach(function(k,i){o[k]=r.d[i]});o.prev=o.p-(o.chga||0);return o}).filter(function(o){return /^[A-Z0-9.\-]{1,12}$/.test(o.k)&&o.p!=null});
+ var m=/(\d+)$/.exec(out[0]&&out[0].um||'');delayTxt=m?'tertunda ±'+Math.round(m[1]/60)+' menit':(out[0]&&out[0].um==='streaming'?'streaming':'kemungkinan tertunda 10-15 menit');
+ try{var x=await scan({symbols:{tickers:['IDX:COMPOSITE','IDX:LQ45','IDX:IDX30','IDX:JII']},columns:['name','close','change','change_abs']});
+  IXS=x.map(function(r){return{k:r.d[0],p:r.d[1],chg:r.d[2],a:r.d[3]}});IHSG=IXS.filter(function(i){return i.k==='COMPOSITE'})[0]||null}catch(e){IXS=[];IHSG=null}
+ return out}
+
+/* cadangan: Yahoo Finance (data harian, saham likuid saja) */
+async function yget(sym){var u='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=1y&interval=1d';
+ for(var i=0;i<3;i++){try{var j=await tfetch(PX[i](u),null,8000);var r=j.chart.result[0];if(r)return r}catch(e){}}throw 0}
+function emaS(a,n){var k=2/(n+1),e=a[0],o=[e];for(var i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e)}return o}
+function yparse(k,r){var q=r.indicators.quote[0],b=[];(r.timestamp||[]).forEach(function(t,i){if(q.close[i]!=null)b.push({t:t,c:q.close[i],h:q.high[i],l:q.low[i],o:q.open[i],v:q.volume[i]||0})});if(b.length<60)throw 0;
+ var P=r.meta.regularMarketPrice,rt=r.meta.regularMarketTime,day=function(t){return Math.floor((t+25200)/86400)};
+ if(P&&rt&&day(rt)>day(b[b.length-1].t))b.push({t:rt,c:P,h:r.meta.regularMarketDayHigh||P,l:r.meta.regularMarketDayLow||P,o:P,v:r.meta.regularMarketVolume||0});
+ var c=b.map(function(x){return x.c}),n=c.length,L=b[n-1],p=P||L.c,prev=c[n-2];c[n-1]=p;var va=0,i;for(i=n-11;i<n-1;i++)va+=b[i].v;va/=10;
+ var m12=emaS(c,12),m26=emaS(c,26),md=m12.map(function(v,i){return v-m26[i]});
+ return{k:k,name:r.meta.longName||r.meta.shortName||k,p:p,prev:prev,chga:p-prev,chg:(p-prev)/prev*100,open:L.o,high:L.h,low:L.l,vol:L.v,val:L.v*(L.h+L.l+p)/3,rvol:va?L.v/va:null,mcap:null,sector:null,rsi:rsi(c,14),e10:ema(c,10),e20:ema(c,20),e50:ema(c,50),macd:md[n-1],macds:ema(md,9),atr:atr(b,14),rec:null,hi52:r.meta.fiftyTwoWeekHigh,lo52:r.meta.fiftyTwoWeekLow,pw:(p/c[n-6]-1)*100,pm:(p/c[n-22]-1)*100}}
+async function loadYahoo(){var out=[],q=BACKUP.slice(),fail=0;
+ try{var r0=await yget('^JKSE'),cl=r0.indicators.quote[0].close.filter(function(v){return v!=null}),p=r0.meta.regularMarketPrice,pv=cl[cl.length-2];IHSG={k:'COMPOSITE',p:p,a:p-pv,chg:(p-pv)/pv*100};IXS=[IHSG]}catch(e){IHSG=null;IXS=[]}
+ async function worker(){while(q.length&&fail<12){var k=q.shift();try{out.push(yparse(k,await yget(k+'.JK')));if(out.length%10===0){ixStat('⏳ Mode cadangan: memuat '+out.length+'/'+BACKUP.length+' saham...')}}catch(e){fail++}}}
+ await Promise.all([worker(),worker(),worker(),worker()]);if(out.length<10)throw 0;delayTxt='tertunda ±10 menit atau lebih';return out}
+
+/* aturan BEI */
+function tick(p){return p<200?1:p<500?2:p<2000?5:p<5000?10:25}
+function dn(p){var t=tick(p);return Math.max(1,Math.floor(p/t+1e-9)*t)}
+function upT(p){var t=tick(p);return Math.ceil(p/t-1e-9)*t}
+function limits(prev){if(!(prev>0))return null;if(prev<=10)return{ara:prev+1,arb:Math.max(1,prev-1)};var a=prev<=200?.35:prev<=5000?.25:.2,b=Date.now()<Date.parse('2027-01-01T00:00:00+07:00')?.07:a;return{ara:dn(prev*(1+a)),arb:upT(prev*(1-b))}}
+
+/* sinyal */
+function newsFor(k){var c=Date.now()-864e5;return items.filter(function(o){return o.time>c&&o.sg&&o.sg.a.some(function(x){return x.k===k})})}
+function nscore(){var m={},now=Date.now(),c=Math.min(maxAge(),864e5);items.forEach(function(o){if(!o.sg||now-o.time>c)return;o.sg.a.forEach(function(x){if(!x.d||(x.t!=='i'))return;var r=m[x.k]||(m[x.k]={s:0,n:0});r.s+=x.d*x.s*(1-(now-o.time)/c*.7)*.5;r.n++})});return m}
+function num(v){return v!=null&&!isNaN(v)}
+function signal(o,ns){if(![o.rsi,o.e10,o.e20,o.e50,o.atr,o.macd,o.macds].every(num))return null;var s=0,w=[];
+ if(o.e10>o.e20){s+=1;w.push('EMA10>EMA20')}else{s-=1;w.push('EMA10<EMA20')}
+ if(o.p>o.e50){s+=.5;w.push('di atas EMA50')}else{s-=.5;w.push('di bawah EMA50')}
+ if(o.macd>o.macds){s+=.7;w.push('MACD naik')}else{s-=.7;w.push('MACD turun')}
+ if(o.rsi>75){s-=1;w.push('RSI '+o.rsi.toFixed(0)+' jenuh beli')}else if(o.rsi>=50&&o.rsi<=68){s+=.6;w.push('RSI '+o.rsi.toFixed(0))}else if(o.rsi<30){s+=.4;w.push('RSI '+o.rsi.toFixed(0)+' jenuh jual')}else{if(o.rsi<50)s-=.4;w.push('RSI '+o.rsi.toFixed(0))}
+ if(o.rvol>1.5&&o.chg){s+=o.chg>0?.8:-.8;w.push('volume '+o.rvol.toFixed(1)+'x')}
+ if(num(o.rec))s+=o.rec;
+ var n=ns[o.k];if(n){var v=Math.max(-2,Math.min(2,n.s));s+=v;w.push('berita '+(v>0?'+':'')+v.toFixed(1)+' ('+n.n+')')}
+ var L=limits(o.prev),side=s>=2.5&&o.rsi<=75&&o.chg>-3&&!(L&&o.p>=L.ara)?'BELI':s<=-2?'JUAL':'PANTAU';
+ return{k:o.k,side:side,score:s,str:Math.min(99,Math.round(Math.abs(s)/5.5*100)),why:w}}
+function levels(o,x){var e=o.p,d=Math.min(Math.max(1.5*o.atr,e*.03),e*.15),sl=dn(e-d),R=e-sl;if(R<=0){sl=e-tick(e);R=e-sl}return{k:o.k,entry:e,sl:sl,tp1:upT(e+1.5*R),tp2:upT(e+3*R),t:Date.now(),status:'AKTIF',done:0,hit1:0,str:x.str,why:x.why}}
+function compute2(){var ns=nscore(),liq=+$('ixLiq').value,now=Date.now(),fresh=[],wls=wl();SG={};
+ S.forEach(function(o){var x=signal(o,ns);if(x){x.liq=o.val>=liq&&o.p>=50;SG[o.k]=x}
+  var t=ISIG[o.k];if(t&&!t.done){var sl=t.hit1?t.entry:t.sl;
+   if(o.p<=sl){t.done=1;t.dt=now;t.status=t.hit1?'BALIK KE ENTRY (setelah TP1)':'SL KENA';hit(t)}
+   else if(o.p>=t.tp2){t.done=1;t.dt=now;t.status='TP2 TERCAPAI ✔';hit(t)}
+   else if(!t.hit1&&o.p>=t.tp1){t.hit1=1;t.status='TP1 TERCAPAI ✔ (SL→entry)';hit(t)}
+   else if(now-t.t>5*864e5){t.done=1;t.dt=now;t.status='KEDALUWARSA'}}
+  if(x&&x.side==='BELI'&&x.liq&&(!t||(t.done&&now-t.dt>864e5))){ISIG[o.k]=levels(o,x);fresh.push(o.k)}});
+ Object.keys(ISIG).forEach(function(k){var t=ISIG[k];if(now-t.t>7*864e5)delete ISIG[k]});
+ try{ls.isig=JSON.stringify(ISIG)}catch(e){}
+ if(fresh.length){logl('[IDX] sinyal beli baru: '+fresh.slice(0,8).join(' '),'a');var f=wls.length?fresh.filter(function(k){return wls.indexOf(k)>-1}):fresh;if(!first&&f.length){rdPing('#00e676');notify('📈 Sinyal saham IDX',f.slice(0,5).map(function(k){var t=ISIG[k];return k+' entry '+t.entry+' TP '+t.tp1+' SL '+t.sl}).join(' | '))}}}
+function hit(t){var w=wl();logl('[IDX HIT] '+t.k+' '+t.status,t.status.indexOf('SL')>-1?'x':'a');if(!first&&(!w.length||w.indexOf(t.k)>-1))notify('🎯 '+t.k,t.status+' (entry '+t.entry+')')}
+
+/* tampilan */
+function rp(p){return num(p)?Math.round(p).toLocaleString('id-ID'):'--'}
+function big(v){if(!num(v))return '--';var a=Math.abs(v);return a>=1e12?(v/1e12).toFixed(2)+' T':a>=1e9?(v/1e9).toFixed(1)+' M':a>=1e6?(v/1e6).toFixed(1)+' jt':Math.round(v).toLocaleString('id-ID')}
+function pc(v){return num(v)?'<span class="'+(v>0?'up':v<0?'dn':'nt')+'">'+(v>0?'+':'')+v.toFixed(2)+'%</span>':'--'}
+function ixStat(m,err){var e=$('ixStat');e.textContent=m;e.className=err?'err':''}
+function status(){var o=mstate(MK[0],Date.now()),when=lastOk?new Date(lastOk).toLocaleTimeString('id-ID'):'-';
+ if(!S.length)return;ixStat((mode==='tv'?'● Sumber: TradingView · '+S.length+' saham':'⚠ MODE CADANGAN (Yahoo Finance) · hanya '+S.length+' saham likuid, ranking bukan seluruh bursa')+' · data '+delayTxt+' · diambil '+when+' · jam bursa: '+(o.open?'BUKA':o.lb+' (harga terakhir)')+(Date.now()-lastOk>6e5?' · ⚠ DATA LAMA, gagal memperbarui':''),Date.now()-lastOk>6e5)}
+function sum(){var tr=S.filter(function(o){return o.vol>0}),u=0,d=0,f=0,val=0,vol=0,na=0,nb=0;
+ tr.forEach(function(o){if(o.chg>0)u++;else if(o.chg<0)d++;else f++;val+=o.val||0;vol+=o.vol||0;var L=limits(o.prev);if(L){if(o.p>=L.ara&&o.chg>0)na++;if(o.p<=L.arb&&o.chg<0)nb++}});var t=u+d+f||1;
+ var h=(IXS.length?IXS:[{k:'COMPOSITE'}]).map(function(i){return '<div class="st"><i>'+(i.k==='COMPOSITE'?'IHSG':esc(i.k))+'</i><b>'+(num(i.p)?i.p.toLocaleString('id-ID',{maximumFractionDigits:2}):'--')+'</b><br><small>'+(num(i.a)?(i.a>0?'+':'')+i.a.toFixed(2)+' ':'')+pc(i.chg)+'</small></div>'}).join('');
+ h+='<div class="st"><i>NAIK / TURUN / TETAP</i><b><span class="up">'+u+'</span> / <span class="dn">'+d+'</span> / '+f+'</b><div class="brd"><span style="width:'+u/t*100+'%;background:var(--g)"></span><span style="width:'+f/t*100+'%;background:#777"></span><span style="width:'+d/t*100+'%;background:var(--r)"></span></div></div>';
+ h+='<div class="st"><i>NILAI TRANSAKSI'+(mode==='tv'?'':' (daftar ini)')+'</i><b>Rp '+big(val)+'</b><br><small>volume '+big(vol)+' saham</small></div>';
+ h+='<div class="st"><i>ARA / ARB (perkiraan)</i><b><span class="up">'+na+'</span> / <span class="dn">'+nb+'</span></b></div>';$('ixSum').innerHTML=h}
+function card(o,x){var t=ISIG[o.k],h='<div class="sc '+(x.side==='BELI'?'BUY':'JUAL')+'" data-s="'+o.k+'"><div class="sh"><b>'+o.k+'</b><span class="sd '+(x.side==='BELI'?'BUY':'JUAL')+'">'+(x.side==='BELI'?'▲ BELI':'▼ JUAL')+'</span></div><div class="px"><b>'+rp(o.p)+'</b>'+pc(o.chg)+'</div>';
+ if(x.side==='BELI'&&t){h+='<div class="lv"><div class="e"><i>ENTRY</i><b>'+rp(t.entry)+'</b></div><div class="z"><i>SL</i><b>'+rp(t.sl)+'</b></div><div class="t"><i>TP1</i><b>'+rp(t.tp1)+'</b></div><div class="t"><i>TP2</i><b>'+rp(t.tp2)+'</b></div></div>'}
+ else h+='<div class="lv"><div><i>EMA20</i><b>'+rp(o.e20)+'</b></div><div><i>EMA50</i><b>'+rp(o.e50)+'</b></div></div>';
+ return h+'<div class="cb"><span style="width:'+x.str+'%"></span></div><div class="sw">'+esc(x.why.slice(0,5).join(' · '))+'</div><div class="ss">skor '+x.str+'%'+(x.side==='BELI'&&t?' · '+esc(t.status)+' · '+ago(t.t):' · nilai '+big(o.val))+'</div></div>'}
+function sigs(){var w=wl(),a=S.filter(function(o){var x=SG[o.k];return x&&x.liq&&(!w.filter(function(k){return MAP[k]}).length||w.indexOf(o.k)>-1)});
+ var b=a.filter(function(o){return SG[o.k].side==='BELI'}).sort(function(p,q){return SG[q.k].score-SG[p.k].score}),s=a.filter(function(o){return SG[o.k].side==='JUAL'}).sort(function(p,q){return SG[p.k].score-SG[q.k].score});
+ $('ixSig').innerHTML=b.slice(0,24).map(function(o){return card(o,SG[o.k])}).join('')||'<div class="src" style="padding:8px">Belum ada saham yang memenuhi syarat beli pada filter ini.</div>';
+ $('ixSell').innerHTML=s.slice(0,16).map(function(o){return card(o,SG[o.k])}).join('')||'<div class="src" style="padding:8px">Tidak ada sinyal jual pada filter ini.</div>';
+ $('ixSgi').textContent='· '+b.length+' beli · '+s.length+' jual'}
+function ranks(){var t=S.filter(function(o){return o.vol>0});
+ function top(f,key,dir){return t.filter(f||Boolean).sort(function(a,b){return((a[key]||0)-(b[key]||0))*dir}).slice(0,10)}
+ var R=[['🚀 TOP GAINER',top(function(o){return o.chg>0},'chg',-1),'val'],['🔻 TOP LOSER',top(function(o){return o.chg<0},'chg',1),'val'],['💰 TOP NILAI TRANSAKSI',top(null,'val',-1),'val'],['📦 TOP VOLUME',top(null,'vol',-1),'vol'],
+ ['⚡ LONJAKAN VOLUME',top(function(o){return o.val>1e9&&o.rvol>1.5},'rvol',-1),'rvol'],['🟢 KENA ARA',top(function(o){var L=limits(o.prev);return L&&o.chg>0&&o.p>=L.ara},'val',-1),'val'],['🔴 KENA ARB',top(function(o){var L=limits(o.prev);return L&&o.chg<0&&o.p<=L.arb},'val',-1),'val'],
+ ['🏔 DEKAT TERTINGGI 52 MG',top(function(o){return o.hi52&&o.p>=o.hi52*.98&&o.val>1e9},'val',-1),'val'],['🕳 DEKAT TERENDAH 52 MG',top(function(o){return o.lo52&&o.p<=o.lo52*1.02&&o.val>1e8},'val',-1),'val'],
+ ['🧊 RSI JENUH JUAL (<30)',top(function(o){return num(o.rsi)&&o.rsi<30&&o.val>1e9},'rsi',1),'rsi'],['🔥 RSI JENUH BELI (>70)',top(function(o){return o.rsi>70&&o.val>1e9},'rsi',-1),'rsi'],['📅 TERKUAT 1 BULAN',top(function(o){return num(o.pm)&&o.val>1e9},'pm',-1),'pm']];
+ if(mode==='tv')R.push(['🏦 KAPITALISASI TERBESAR',S.slice().sort(function(a,b){return(b.mcap||0)-(a.mcap||0)}).slice(0,10),'mcap']);
+ var sc=[].map.call($('ixRank').querySelectorAll('.pb'),function(e){return e.scrollTop});
+ $('ixRank').innerHTML=R.map(function(r){var k=r[2],lb={val:'Nilai',vol:'Volume',rvol:'x Rata2',rsi:'RSI',pm:'1 Bln',mcap:'Mcap'}[k];return '<section class="pn"><div class="ph"><span>'+r[0]+'</span><span class="s">'+lb+'</span></div><div class="pb">'+(r[1].length?'<table class="t">'+r[1].map(function(o){var v=k==='rvol'?(num(o.rvol)?o.rvol.toFixed(1)+'x':'--'):k==='rsi'?o.rsi.toFixed(0):k==='pm'?pc(o.pm):big(o[k]);return '<tr data-s="'+o.k+'"><td><b>'+o.k+'</b></td><td>'+rp(o.p)+'</td><td>'+pc(o.chg)+'</td><td>'+v+'</td></tr>'}).join('')+'</table>':'<div class="src" style="padding:8px">tidak ada saat ini</div>')+'</div></section>'}).join('');
+ [].forEach.call($('ixRank').querySelectorAll('.pb'),function(e,i){e.scrollTop=sc[i]||0})}
+function sectors(){var m={};S.forEach(function(o){if(!o.sector||!o.vol||!num(o.chg))return;var r=m[o.sector]||(m[o.sector]={w:0,s:0,n:0,v:0}),w=o.mcap||1;r.w+=w;r.s+=o.chg*w;r.n++;r.v+=o.val||0});
+ var a=Object.keys(m).map(function(k){return{k:k,c:m[k].s/m[k].w,n:m[k].n,v:m[k].v}}).sort(function(p,q){return q.c-p.c});
+ $('ixSec').innerHTML=a.map(function(r){var al=Math.min(.45,.06+Math.abs(r.c)/4*.35);return '<div class="se'+(secF===r.k?' on':'')+'" data-sec="'+esc(r.k).replace(/"/g,'&quot;')+'" style="background:rgba('+(r.c>=0?'0,230,118':'255,59,48')+','+al+')">'+esc(r.k)+'<b>'+(r.c>=0?'+':'')+r.c.toFixed(2)+'%</b><span class="src">'+r.n+' saham · Rp '+big(r.v)+'</span></div>'}).join('')||'<div class="src" style="padding:8px">Data sektor hanya tersedia dari sumber utama (TradingView).</div>'}
+function table(){var q=$('ixq').value.trim().toLowerCase();var a=S.filter(function(o){return(!secF||o.sector===secF)&&(!q||(o.k+' '+(o.name||o.k)).toLowerCase().indexOf(q)>-1||String(o.name).toLowerCase().indexOf(q)>-1)});
+ function g(o){return sortK==='sig'?(SG[o.k]?SG[o.k].score:-99):o[sortK]}
+ a.sort(function(x,y){var p=g(x),r=g(y);if(typeof p==='string'||typeof r==='string')return String(p).localeCompare(String(r))*sortD;return((p==null?-1e18:p)-(r==null?-1e18:r))*sortD});
+ var H=[['k','Kode'],['p','Harga'],['chg','%'],['val','Nilai'],['vol','Volume'],['rvol','RVol'],['rsi','RSI'],['pw','1 Mg'],['pm','1 Bln'],['sig','Sinyal']],sc=$('ixAll').scrollTop;
+ $('ixAll').innerHTML='<table class="t"><tr>'+H.map(function(h){return '<th data-h="'+h[0]+'">'+h[1]+(sortK===h[0]?(sortD<0?' ▼':' ▲'):'')+'</th>'}).join('')+'</tr>'+a.map(function(o){var x=SG[o.k];return '<tr data-s="'+o.k+'" title="'+esc(String(o.name||'')).replace(/"/g,'&quot;')+'"><td><b>'+o.k+'</b></td><td>'+rp(o.p)+'</td><td>'+pc(o.chg)+'</td><td>'+big(o.val)+'</td><td>'+big(o.vol)+'</td><td>'+(num(o.rvol)?o.rvol.toFixed(1):'--')+'</td><td>'+(num(o.rsi)?o.rsi.toFixed(0):'--')+'</td><td>'+pc(o.pw)+'</td><td>'+pc(o.pm)+'</td><td>'+(x?'<span class="'+(x.side==='BELI'?'up':x.side==='JUAL'?'dn':'nt')+'">'+x.side+(x.liq?'':' (sepi)')+'</span>':'--')+'</td></tr>'}).join('')+'</table>';
+ $('ixAll').scrollTop=sc;$('ixAlli').textContent='· '+a.length+' saham'+(secF?' · '+secF:'')}
+function news(){var a=items.filter(function(o){return o.cat==='ID'&&Date.now()-o.time<=Math.max(maxAge(),216e5)&&o.sg&&(o.sg.a.some(function(x){return x.t==='i'||x.k==='IHSG'})||(o.sg.ev&&o.sg.ev.length))}).slice(0,60),sc=$('ixNews').scrollTop;
+ $('ixNews').innerHTML=a.map(function(o){return row(o)}).join('')||'<div class="src" style="padding:12px">⏳ Menunggu berita emiten...</div>';$('ixNews').scrollTop=sc;$('ixNwi').textContent=a.length+' berita'}
+function tape(){var a=S.filter(function(o){return o.vol>0}).sort(function(a,b){return b.val-a.val}).slice(0,40);var h=(IHSG?'<span class="tk"><b>IHSG</b> '+IHSG.p.toFixed(2)+' '+pc(IHSG.chg)+'</span>':'')+a.map(function(o){return '<span class="tk" data-s="'+o.k+'"><b>'+o.k+'</b> '+rp(o.p)+' '+pc(o.chg)+'</span>'}).join('');
+ var t=$('ixTk');if(t.childElementCount===(a.length+(IHSG?1:0))*2){var d=document.createElement('div');d.innerHTML=h+h;[].forEach.call(t.children,function(e,i){e.innerHTML=d.children[i].innerHTML;e.setAttribute('data-s',d.children[i].getAttribute('data-s')||'')})}else t.innerHTML=h+h}
+var openK='';
+function detail(k){var o=MAP[k];if(!o)return;openK=k;var x=SG[k],t=ISIG[k],L=limits(o.prev),nw=newsFor(k);
+ function kv(a,b){return '<div><i>'+a+'</i><b>'+b+'</b></div>'}
+ $('ixBox').innerHTML='<div class="ph"><span>▣ '+k+' · '+esc(String(o.name||''))+'</span><button id="ixX">✕ tutup</button></div><div class="in2"><div style="font-size:24px"><b>'+rp(o.p)+'</b> <span style="font-size:14px">'+pc(o.chg)+'</span></div><div class="kv">'+kv('Sebelumnya',rp(o.prev))+kv('Open',rp(o.open))+kv('High',rp(o.high))+kv('Low',rp(o.low))+kv('ARA',L?rp(L.ara):'--')+kv('ARB',L?rp(L.arb):'--')+kv('Nilai',big(o.val))+kv('Volume',big(o.vol))+kv('Vol relatif',num(o.rvol)?o.rvol.toFixed(2)+'x':'--')+kv('RSI(14)',num(o.rsi)?o.rsi.toFixed(1):'--')+kv('EMA20',rp(o.e20))+kv('EMA50',rp(o.e50))+kv('52 mg tinggi',rp(o.hi52))+kv('52 mg rendah',rp(o.lo52))+kv('Mcap',big(o.mcap))+kv('Sektor',esc(o.sector||'--'))+'</div>'+
+ (x?'<div class="sw">SINYAL: '+x.side+' ('+x.str+'%) · '+esc(x.why.join(' · '))+'</div>':'')+(t&&!t.done?'<div class="sw">Rencana: entry '+rp(t.entry)+' · SL '+rp(t.sl)+' · TP1 '+rp(t.tp1)+' · TP2 '+rp(t.tp2)+' · '+esc(t.status)+'</div>':'')+
+ '<p><a href="https://www.tradingview.com/chart/?symbol=IDX%3A'+k+'" target="_blank" rel="noopener" style="color:var(--o)">📈 Buka grafik '+k+' di TradingView ↗</a></p></div><div class="sub">BERITA 24 JAM ('+nw.length+')</div>'+(nw.slice(0,8).map(function(o){return row(o)}).join('')||'<div class="src" style="padding:8px 12px">Belum ada berita yang menyebut '+k+'.</div>');
+ $('ixMod').classList.add('show')}
+function close_(){openK='';$('ixMod').classList.remove('show')}
+function renderAll(){if(!S.length)return;status();sum();sigs();ranks();sectors();table();tape()}
+async function refresh(){if(busy)return;busy=1;try{var d=null,m='tv';try{d=await loadTV()}catch(e){logl('[IDX] sumber utama gagal, coba cadangan','x');m='yh';d=await loadYahoo()}
+  mode=m;S=d;MAP={};S.forEach(function(o){MAP[o.k]=o;if(o.k.length===4&&!TY[o.k])TY[o.k]='i'});lastOk=Date.now();compute2();renderAll();first=0;logl('[IDX] '+S.length+' saham diperbarui ('+(m==='tv'?'TradingView':'Yahoo')+')')}
+ catch(e){logl('[IDX] gagal memuat data saham','x');if(S.length)status();else ixStat('✖ Data saham tidak bisa dimuat. Penyebab umum: file dibuka langsung (file://), pemblokir iklan/ISP, atau proxy gratis sedang penuh. Coba buka lewat http://localhost, lalu klik ⟳ SCAN. Dicoba lagi otomatis.',1)}busy=0}
+var nextT=0;function loop(){var o=mstate(MK[0],Date.now()),iv=!S.length?45e3:mode==='tv'?(o.open?20e3:18e4):(o.open?18e4:6e5);if(Date.now()>=nextT&&!document.hidden){nextT=Date.now()+iv;refresh()}else if(S.length)status()}
+document.addEventListener('click',function(e){var t=e.target;if(!t.closest)return;
+ if(t.id==='ixX'||t.id==='ixMod')return close_();if(t.closest('a'))return;
+ var h=t.closest('th[data-h]');if(h){var k=h.getAttribute('data-h');sortD=sortK===k?-sortD:(k==='k'?1:-1);sortK=k;return table()}
+ var sec=t.closest('[data-sec]');if(sec){var v=sec.getAttribute('data-sec');secF=secF===v?'':v;sectors();table();return}
+ var c=t.closest('[data-s]');if(c&&c.getAttribute('data-s'))return detail(c.getAttribute('data-s'));
+ var ch=t.closest('#ixNews .chip, #ixBox .chip');if(ch&&MAP[ch.dataset.k])detail(ch.dataset.k)});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')close_()});
+$('ixq').oninput=table;$('ixLiq').value=ls.ixliq||'5000000000';$('ixLiq').onchange=function(){ls.ixliq=this.value;compute2();renderAll()};
+$('rf').addEventListener('click',function(){nextT=0;loop()});$('wl').addEventListener('input',function(){if(S.length)sigs()});
+function setView(v){ls.view=v;document.body.classList.remove('v-saham','v-news');if(v!=='all')document.body.classList.add('v-'+v);[].forEach.call($('views').children,function(b){b.className=b.dataset.v===v?'on':''});$('wrap').scrollTop=0}
+$('views').onclick=function(e){var v=e.target.dataset.v;if(v)setView(v)};setView(ls.view||'all');
+var extra=[["GN Aksi Korporasi","ID","https://news.google.com/rss/search?q=saham+dividen+OR+buyback+OR+%22right+issue%22+OR+akuisisi+emiten+when:1d&hl=id&gl=ID&ceid=ID:id"],["GN Pergerakan Saham","ID","https://news.google.com/rss/search?q=saham+%22top+gainers%22+OR+ARA+OR+suspensi+OR+UMA+BEI+when:1d&hl=id&gl=ID&ceid=ID:id"]];
+extra.forEach(function(f,i){F.push(f);setTimeout(function(){poll(f)},2000+i*500)});
+setInterval(loop,2000);setInterval(news,5000);setInterval(function(){if(S.length){compute2();sigs()}},3e4);news();loop();
+window.IDXAPI={get:function(k){var o=MAP[k];return o?{o:o,s:SG[k],t:ISIG[k],l:limits(o.prev),n:newsFor(k).length}:null},count:function(){return S.length},rules:{limits:limits,tick:tick}};
+})();
+</script>
+<script>
+/* ================= LABA-LABA PEMERIKSA ================= */
+(function(){
+var TAU=Math.PI*2,cv=document.createElement('canvas');cv.id='spcv';cv.setAttribute('aria-hidden','true');document.body.appendChild(cv);var g=cv.getContext('2d'),W=0,H=0,D=1;
+var box=document.createElement('div');box.id='splog';box.innerHTML='<div class="h"><span>🕷 SPIDER CHAT</span><span><i id="spauto"></i> <span id="spmin"></span></span></div><div class="b" id="spb"></div><div class="ch" id="spch"></div><div class="in"><input id="spq" autocomplete="off" placeholder="ketik: cobbe tolong cek crypto scanner"><button id="spsend">▶</button></div>';document.body.appendChild(box);
+function setMin(m){box.className=m?'min':'';ls.spm=m?'1':'0';$('spmin').textContent=m?'▲':'▼'}
+box.firstChild.onclick=function(){setMin(box.className!=='min')};setMin(ls.spm?ls.spm==='1':innerWidth<1000);
+function rsz(){D=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;cv.style.width=W+'px';cv.style.height=H+'px'}addEventListener('resize',rsz);rsz();
+function slog(m,c){var b=$('spb'),d=document.createElement('div');if(c)d.className=c;var full=new Date().toTimeString().slice(0,8)+' '+m,i=0;d.title=full;b.appendChild(d);while(b.children.length>14)b.removeChild(b.firstChild);(function t(){i+=4;d.textContent=full.slice(0,i)+(i<full.length?'▌':'');if(i<full.length)setTimeout(t,16)})()}
+function rnd(a,b){return a+Math.random()*(b-a)}
+
+/* sprite tubuh (menghadap +x) */
+var SS=4,body=(function(){var c=document.createElement('canvas');c.width=80*SS;c.height=50*SS;var x=c.getContext('2d');x.scale(SS,SS);x.translate(44,25);
+ function hair(cx,cy,rx,ry,n,len,col){x.strokeStyle=col;x.lineWidth=.22;for(var i=0;i<n;i++){var a=Math.random()*TAU,r=Math.sqrt(Math.random()),px=cx+Math.cos(a)*rx*r,py=cy+Math.sin(a)*ry*r,h=Math.PI+(py-cy)/ry*.9+rnd(-.35,.35),l=len*rnd(.4,1)*(r>.8?1.5:1);x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(h)*l,py+Math.sin(h)*l);x.stroke()}}
+ function blob(cx,cy,rx,ry,c0,c1,c2){var gr=x.createRadialGradient(cx+rx*.2,cy-ry*.35,1,cx,cy,rx*1.05);gr.addColorStop(0,c0);gr.addColorStop(.55,c1);gr.addColorStop(1,c2);x.fillStyle=gr;x.beginPath();x.ellipse(cx,cy,rx,ry,0,0,TAU);x.fill()}
+ x.fillStyle='#0b0807';x.fillRect(-9,-2.6,10,5.2);
+ blob(-19,0,16.5,12.5,'#4a3a30','#1b1311','#050303');
+ x.strokeStyle='rgba(150,120,95,.38)';x.lineWidth=1.1;for(var i=0;i<4;i++){var bx=-13-i*5.2,s=6-i;x.beginPath();x.moveTo(bx-3,-s);x.quadraticCurveTo(bx+1,-1,bx+1.5,0);x.quadraticCurveTo(bx+1,1,bx-3,s);x.stroke()}
+ x.fillStyle='rgba(0,0,0,.55)';x.beginPath();x.ellipse(-16,0,11,2.1,0,0,TAU);x.fill();
+ hair(-19,0,16.5,12.5,900,3.2,'rgba(168,146,126,.34)');hair(-19,0,16,12,260,4.2,'rgba(8,5,4,.8)');
+ x.strokeStyle='rgba(150,190,165,.42)';x.lineWidth=.8;x.beginPath();x.ellipse(-19,0,16.2,12.2,0,Math.PI*1.08,Math.PI*1.82);x.stroke();
+ blob(8,0,11.5,9,'#51403a','#221815','#080505');
+ x.strokeStyle='rgba(0,0,0,.6)';x.lineWidth=.7;for(i=0;i<8;i++){var a=i/8*TAU+.4;x.beginPath();x.moveTo(5,0);x.lineTo(5+Math.cos(a)*9,Math.sin(a)*7);x.stroke()}
+ hair(8,0,11,8.6,380,2,'rgba(175,152,130,.3)');
+ x.strokeStyle='rgba(170,205,180,.4)';x.lineWidth=.6;x.beginPath();x.ellipse(8,0,11.2,8.7,0,Math.PI*1.1,Math.PI*1.8);x.stroke();
+ [[16.8,-1.7,1.5],[16.8,1.7,1.5],[15.6,-4.2,1],[15.6,4.2,1],[13.6,-2.8,.8],[13.6,2.8,.8],[12.6,-5,.65],[12.6,5,.65]].forEach(function(e){x.fillStyle='#020101';x.beginPath();x.arc(e[0],e[1],e[2],0,TAU);x.fill();x.fillStyle='rgba(255,60,40,.85)';x.beginPath();x.arc(e[0]+e[2]*.25,e[1]-e[2]*.25,e[2]*.38,0,TAU);x.fill();x.fillStyle='rgba(255,240,230,.9)';x.fillRect(e[0]+e[2]*.2,e[1]-e[2]*.55,.35,.35)});
+ return c})();
+
+var HIP=[[13,5.5],[9,7.5],[4,7.5],[0,5.5]],REST=[[43,22],[20,40],[-9,40],[-35,27]],LEN=[[22,22,13],[20,20,12],[19,19,12],[23,24,14]];
+var ROLE=[
+{n:'Cobbe',tag:'CRYPTO',re:/\b(cobbe|cobe|kobe)\b/,col:'0,255,102',sel:'#sg .sc, #hg .tl'},
+{n:'Webi',tag:'BERITA',re:/\b(webi|webbi)\b/,col:'255,157,0',sel:'#ixNews .r, #list .r'},
+{n:'Sasa',tag:'SAHAM',re:/\b(sasa|sassa)\b/,col:'77,163,255',sel:'#ixSig .sc, #ixSell .sc, #ixRank tr[data-s], #ixAll tr[data-s]'},
+{n:'Rada',tag:'RADAR',re:/\b(rada|radar)\b/,col:'255,80,70',sel:'#ixSum .st, #ixSec .se, #radar .chip, #evbar .chip'},
+{n:'Jaga',tag:'WATCH',re:/\b(jaga|jagga)\b/,col:'190,130,255',sel:'#list .r, #sg .sc, #ixRank tr[data-s]'}];
+function Spider(i,sc){var s={i:i,role:ROLE[i%ROLE.length],sc:sc,x:rnd(W*.1,W*.9),y:rnd(H*.3,H*.9),a:rnd(0,TAU),v:0,legs:[],state:'idle',wait:rnd(.3,2),tg:null,trail:[],ph:rnd(0,9),stride:0,recent:[],q:[],act:null,bub:null,rip:null,hold:0,mv:false};
+ for(var k=0;k<8;k++){var side=k<4?-1:1,n=k%4,l={side:side,n:n,grp:(n+(side>0?1:0))%2,hair:[],step:0};var r=world(s,REST[n][0],REST[n][1]*side);l.x=r[0];l.y=r[1];
+  for(var h=0;h<110;h++)l.hair.push([Math.floor(rnd(0,3)),rnd(0,1),Math.random()<.5?-1:1,rnd(1.4,4.2),rnd(.3,.85)]);s.legs.push(l)}return s}
+function world(s,lx,ly){var c=Math.cos(s.a),n=Math.sin(s.a);return[s.x+(lx*c-ly*n)*s.sc,s.y+(lx*n+ly*c)*s.sc]}
+function keyOf(el){return el.getAttribute('data-s')||el.getAttribute('data-k')||(el.querySelector('a[href]')||{}).href||el.textContent.slice(0,30)}
+function visible(el){var r=el.getBoundingClientRect();if(r.width<20||r.height<8||r.bottom<4||r.top>H-4||r.right<4||r.left>W-4)return null;var px=Math.max(2,Math.min(W-2,r.left+r.width*.5)),py=Math.max(2,Math.min(H-2,r.top+r.height*.5)),hit=document.elementFromPoint(px,py);return hit&&(el===hit||el.contains(hit)||(box.contains(hit)&&false))?r:null}
+function pick(s){var all=[].slice.call(document.querySelectorAll(s.role.sel)),c=[];for(var t=0;t<60&&all.length&&c.length<8;t++){var el=all.splice(Math.floor(Math.random()*all.length),1)[0],k=keyOf(el);if(s.recent.indexOf(k)<0&&visible(el))c.push([el,k])}
+ if(!c.length){s.recent=[];return null}var p=c[Math.floor(Math.random()*c.length)];s.recent.push(p[1]);if(s.recent.length>6)s.recent.shift();return{el:p[0],key:p[1]}}
+function refind(s){var t=s.tg;if(t.el.isConnected)return t.el;if(t.get){var e0=t.get();if(e0){t.el=e0;return e0}}var a=document.querySelectorAll(s.role.sel);for(var i=0;i<a.length;i++)if(keyOf(a[i])===t.key){t.el=a[i];return a[i]}return null}
+/* hasil pemeriksaan: hanya membaca data yang memang ada di halaman */
+function report(el){var k=el.getAttribute('data-s'),c=el.getAttribute('data-k');
+ if(k&&window.IDXAPI){var d=IDXAPI.get(k);if(d){var o=d.o,f=[];if(d.l&&o.p>=d.l.ara&&o.chg>0)f.push('ARA');if(d.l&&o.p<=d.l.arb&&o.chg<0)f.push('ARB');if(o.rvol>2)f.push('vol '+o.rvol.toFixed(1)+'x');if(o.rsi>70)f.push('RSI tinggi');if(o.rsi<30)f.push('RSI rendah');
+  return{m:k+' '+Math.round(o.p)+' ('+(o.chg>=0?'+':'')+(+o.chg).toFixed(2)+'%) '+(d.s?'→ '+d.s.side:'')+(f.length?' ⚠ '+f.join(', '):'')+' · '+d.n+' berita',t:k+' '+(d.s?d.s.side:'OK'),c:f.length?'w':d.s&&d.s.side==='JUAL'?'x':''}}}
+ if(el.classList.contains('r')){var a=el.querySelector('a[href]'),it=a&&items.filter(function(o){return o.link===a.getAttribute('href')})[0];if(it){var gg=it.sg||{a:[],ev:[]},sum=0;gg.a.forEach(function(x){sum+=x.d});var tag=gg.ev&&gg.ev[0]?gg.ev[0].l:sum>0?'BULLISH':sum<0?'BEARISH':'NETRAL';
+  return{m:'berita['+tag+'] '+(gg.a.slice(0,3).map(function(x){return x.k}).join(',')||'-')+' · '+it.title,t:tag,c:sum<0?'x':gg.ev&&gg.ev.length?'w':''}}}
+ if(c&&typeof C!=='undefined'&&C[c])return{m:c+'/USDT → '+C[c].side+' · RSI '+C[c].rsi.toFixed(0)+' · skor '+C[c].score.toFixed(1),t:c+' '+C[c].side,c:C[c].side==='SELL'?'x':''};
+ var tx=el.innerText.replace(/\s+/g,' ').trim().slice(0,90);return{m:'cek: '+tx,t:'OK',c:''}}
+
+function brain(s,dt){var gx,gy,sp=0;
+ if(s.q.length&&!s.act&&!s.mv&&s.state!=='idle'){s.state='idle';s.tg=null;s.hold=0}
+ if(s.state==='idle'){
+  if(s.hold>0)s.hold-=dt;
+  else if(s.q.length)runStep(s,s.q.shift());
+  else{s.wait-=dt;if(s.wait<=0){s.tg=pick(s);if(s.tg){s.state='walk';s.age=0}else{s.tg=null;s.pt=[rnd(40,W-40),rnd(80,H-40)];s.state='walk';s.age=0}}}}
+ if(s.state==='walk'){s.age+=dt;if(s.tg){var el=refind(s),r=el&&el.getBoundingClientRect();if(!r||r.bottom<0||r.top>H||!r.width){if(s.act){say(s,'Waduh, targetnya hilang dari layar 🤔','x');s.act=null}s.state='idle';s.wait=.3;s.tg=null}else{var left=s.x<r.left+r.width/2;gx=r.width>150?(left?r.left+18*s.sc:r.right-18*s.sc):(left?r.left-22*s.sc:r.right+22*s.sc);gy=r.top+r.height/2}}else{gx=s.pt[0];gy=s.pt[1]}
+  if(s.state==='walk'){var dx=gx-s.x,dy=gy-s.y,dist=Math.hypot(dx,dy);if(dist<10||s.age>14){s.state=s.tg?'scan':'idle';s.wait=s.tg?2.8:rnd(.5,1.5);s.said=0;s.rep=null;s.mv=false}
+   else{var want=Math.atan2(dy,dx)+Math.sin(s.ph*1.7)*.25*Math.min(1,dist/150),df=Math.atan2(Math.sin(want-s.a),Math.cos(want-s.a));s.a+=Math.max(-3.6*dt,Math.min(3.6*dt,df));var burst=Math.sin(s.ph*2.3+s.i)>-.78?1:.04;sp=Math.min(s.act||s.mv?230:170,40+dist*.55)*(s.act||s.mv?1.35:1)*burst*Math.max(.12,1-Math.abs(df)/1.6)}}}
+ else if(s.state==='scan'){var el2=refind(s);if(!el2){s.act=null;s.state='idle';s.wait=.4;s.tg=null}else{var rr=el2.getBoundingClientRect(),w2=Math.atan2(rr.top+rr.height/2-s.y,rr.left+rr.width/2-s.x),d2=Math.atan2(Math.sin(w2-s.a),Math.cos(w2-s.a));s.a+=d2*Math.min(1,dt*4);
+   if(s.act){var AC=s.act;AC.t+=dt;if(!AC.fired&&AC.t>=.7){AC.fired=1;s.rip={x:rr.left+rr.width/2,y:rr.top+rr.height/2,t:0};try{if(AC.fn)AC.fn(el2,s)}catch(e){}}
+    if(AC.t>=AC.dur){s.act=null;s.state='idle';s.tg=null;s.hold=.25;s.wait=.4}}
+   else{if(!s.said){s.said=1;slog('['+s.role.n+'] probe → '+(el2.getAttribute('data-s')||el2.getAttribute('data-k')||(el2.classList.contains('r')?'berita':'panel')))}s.wait-=dt;if(s.wait<1.4&&!s.rep){s.rep=report(el2);slog('['+s.role.n+'] '+s.rep.m,s.rep.c);bubble(s,s.rep.t)}if(s.wait<=0){s.state='idle';s.wait=rnd(.4,1.6);s.tg=null}}}}
+ s.v+=(sp-s.v)*Math.min(1,dt*9);s.x+=Math.cos(s.a)*s.v*dt;s.y+=Math.sin(s.a)*s.v*dt;s.ph+=dt;
+ var last=s.trail[s.trail.length-1];if(!last||Math.hypot(s.x-last[0],s.y-last[1])>14){var tp=world(s,-34,0);s.trail.push([s.x,s.y,s.ph,tp[0],tp[1]])}while(s.trail.length&&s.ph-s.trail[0][2]>5)s.trail.shift()}
+function gait(s,dt){var busy=[0,0];s.legs.forEach(function(l){if(l.step>0)busy[l.grp]++});var dur=Math.max(.065,.17-s.v*.00075),lead=s.v*dur*.9;
+ s.legs.forEach(function(l){var ix=REST[l.n][0],iy=REST[l.n][1]*l.side,t=world(s,ix,iy);t[0]+=Math.cos(s.a)*lead;t[1]+=Math.sin(s.a)*lead;
+  if(l.step>0){l.step+=dt/dur;var u=Math.min(1,l.step),e=u*u*(3-2*u);l.x=l.fx+(t[0]-l.fx)*e;l.y=l.fy+(t[1]-l.fy)*e;l.lift=Math.sin(u*Math.PI);if(u>=1){l.step=0;l.lift=0}}
+  else{var d=Math.hypot(t[0]-l.x,t[1]-l.y),th=(s.v>8?15:9)*s.sc;if(d>60*s.sc){l.x=t[0];l.y=t[1]}else if(d>th&&!busy[1-l.grp]){l.step=.001;l.fx=l.x;l.fy=l.y;busy[l.grp]++}else if(s.v<5&&s.state!=='walk'&&Math.random()<dt*.07&&l.n===0){l.step=.001;l.fx=l.x+rnd(-8,8);l.fy=l.y+rnd(-8,8)}}})}
+function joints(s,l){var h=world(s,HIP[l.n][0],HIP[l.n][1]*l.side),fx=l.x,fy=l.y;
+ if(s.state==='scan'&&l.n===0){fx+=Math.cos(s.a)*Math.sin(s.ph*13+l.side)*6*s.sc;fy+=Math.sin(s.a)*Math.sin(s.ph*13+l.side)*6*s.sc}
+ var L=LEN[l.n],a=L[0]*s.sc,b=L[1]*s.sc,c=L[2]*s.sc,dx=fx-h[0],dy=fy-h[1],d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d;
+ var ta=Math.min(c,d*.35),mx=world(s,l.n<2?6:-8,l.side*34),ex=fx-h[0],q=[0,0];
+ var ax=fx-ux*ta,ay=fy-uy*ta,bend=(l.n<2?1:-1)*l.side;ax+=uy*bend*c*.22;ay-=ux*bend*c*.22;
+ var vx=ax-h[0],vy=ay-h[1],dd=Math.max(Math.abs(a-b)+.1,Math.min(a+b-.1,Math.hypot(vx,vy))),base=Math.atan2(vy,vx),k=Math.acos(Math.max(-1,Math.min(1,(a*a+dd*dd-b*b)/(2*a*dd))));
+ var k1=[h[0]+Math.cos(base+k)*a,h[1]+Math.sin(base+k)*a],k2=[h[0]+Math.cos(base-k)*a,h[1]+Math.sin(base-k)*a];
+ var out=function(p){var rx=p[0]-s.x,ry=p[1]-s.y,sa=Math.sin(s.a),ca=Math.cos(s.a);return(-rx*sa+ry*ca)*l.side+((rx*ca+ry*sa)*(l.n<2?.25:-.25))};
+ return[h,out(k1)>out(k2)?k1:k2,[ax,ay],[fx,fy]]}
+function seg(p,q,w0,w1,col){var a=Math.atan2(q[1]-p[1],q[0]-p[0])+Math.PI/2,c=Math.cos(a),n=Math.sin(a);g.fillStyle=col;g.beginPath();g.moveTo(p[0]+c*w0/2,p[1]+n*w0/2);g.lineTo(q[0]+c*w1/2,q[1]+n*w1/2);g.lineTo(q[0]-c*w1/2,q[1]-n*w1/2);g.lineTo(p[0]-c*w0/2,p[1]-n*w0/2);g.closePath();g.fill();g.beginPath();g.arc(q[0],q[1],w1/2,0,TAU);g.fill()}
+function draw(s){var sc=s.sc,J=s.legs.map(function(l){return joints(s,l)}),i;
+ /* jejak benang */
+ for(i=1;i<s.trail.length;i++){var A=s.trail[i-1],B=s.trail[i];g.strokeStyle='rgba(205,225,215,'+(.24*(1-(s.ph-B[2])/5)).toFixed(3)+')';g.lineWidth=.6;g.beginPath();g.moveTo(A[3],A[4]);g.lineTo(B[3],B[4]);g.stroke()}
+ /* bayangan */
+ g.save();g.translate(7,11);g.strokeStyle='rgba(0,0,0,.42)';g.lineCap='round';g.lineJoin='round';g.lineWidth=4.4*sc;J.forEach(function(j){g.beginPath();g.moveTo(j[0][0],j[0][1]);for(var k=1;k<4;k++)g.lineTo(j[k][0],j[k][1]);g.stroke()});var sh=world(s,-14,0);g.fillStyle='rgba(0,0,0,.45)';g.beginPath();g.ellipse(sh[0],sh[1],24*sc,13*sc,s.a,0,TAU);g.fill();g.restore();
+ var aura=g.createRadialGradient(s.x,s.y,4,s.x,s.y,58*sc);aura.addColorStop(0,'rgba('+s.role.col+',.13)');aura.addColorStop(1,'rgba('+s.role.col+',0)');g.fillStyle=aura;g.beginPath();g.arc(s.x,s.y,58*sc,0,TAU);g.fill();
+ /* kaki: ruas berotot (menggembung di tengah), belang samar, berbulu */
+ s.legs.forEach(function(l,li){var j=J[li],w=[6.4*sc,5*sc,3.2*sc,1.3*sc],lf=1+(l.lift||0)*.14;
+  for(var k=0;k<3;k++){var p=j[k],q=j[k+1],w0=w[k]*lf*(k===1?1.05:.92),w1=w[k+1]*lf,mid=(w0+w1)*(k===0?.68:.6),an=Math.atan2(q[1]-p[1],q[0]-p[0])+1.5708,c=Math.cos(an),n=Math.sin(an),mx=p[0]+(q[0]-p[0])*.42,my=p[1]+(q[1]-p[1])*.42;
+   var path=function(o){g.beginPath();g.moveTo(p[0]+c*(w0/2+o),p[1]+n*(w0/2+o));g.quadraticCurveTo(mx+c*(mid*.72+o),my+n*(mid*.72+o),q[0]+c*(w1/2+o),q[1]+n*(w1/2+o));g.lineTo(q[0]-c*(w1/2+o),q[1]-n*(w1/2+o));g.quadraticCurveTo(mx-c*(mid*.72+o),my-n*(mid*.72+o),p[0]-c*(w0/2+o),p[1]-n*(w0/2+o));g.closePath()};
+   g.fillStyle='rgba(112,132,118,.5)';path(.55);g.fill();
+   var gr=g.createLinearGradient(mx+c*mid*.6,my+n*mid*.6,mx-c*mid*.6,my-n*mid*.6);gr.addColorStop(0,'#080504');gr.addColorStop(.5,k===1?'#3a2a23':'#2a1e1a');gr.addColorStop(1,'#0a0605');g.fillStyle=gr;path(0);g.fill();
+   g.fillStyle='#0a0605';g.beginPath();g.arc(q[0],q[1],w1*.52,0,TAU);g.fill()}
+  [['rgba(150,128,108,.5)',0],['rgba(205,192,170,.3)',1]].forEach(function(st){g.strokeStyle=st[0];g.lineWidth=.45;g.beginPath();l.hair.forEach(function(h,hi){if(hi%2!==st[1])return;var p=j[h[0]],q=j[h[0]+1],dir=Math.atan2(q[1]-p[1],q[0]-p[0]),n=dir+h[2]*1.57,r=w[h[0]]*.38,x=p[0]+(q[0]-p[0])*h[1]+Math.cos(n)*r,y=p[1]+(q[1]-p[1])*h[1]+Math.sin(n)*r,a=dir+h[2]*h[4],len=h[3]*sc*(st[1]?1:.75);g.moveTo(x,y);g.quadraticCurveTo(x+Math.cos(a+h[2]*.35)*len*.6,y+Math.sin(a+h[2]*.35)*len*.6,x+Math.cos(a)*len,y+Math.sin(a)*len)});g.stroke()})});
+ /* pedipalpus & taring */
+ var tw=Math.sin(s.ph*(s.state==='scan'?16:5))*(s.state==='scan'?2.6:1);
+ [-1,1].forEach(function(d){var a=world(s,14,5*d),b=world(s,23,(8+tw*.4*d)*d),c=world(s,28+tw*d*.6,(4.5+tw*.3)*d);seg(a,b,3.8*sc,2.9*sc,'#2a1e1a');seg(b,c,2.9*sc,1.8*sc,'#150f0d');
+  var f0=world(s,17,2.4*d),f1=world(s,22,2.8*d),f2=world(s,24.5,(.7+Math.abs(tw)*.2)*d);seg(f0,f1,4.4*sc,3*sc,'#170d0b');g.strokeStyle='#6d2016';g.lineWidth=1.2*sc;g.beginPath();g.moveTo(f1[0],f1[1]);g.quadraticCurveTo(world(s,26,2.6*d)[0],world(s,26,2.6*d)[1],f2[0],f2[1]);g.stroke()});
+ g.save();g.translate(s.x,s.y);g.rotate(s.a);var br=1+Math.sin(s.ph*3)*.012;g.scale(sc,sc*br);g.drawImage(body,-44,-25,80,50);g.restore()}
+function overlay(s){if(s.state!=='scan'||!s.tg)return;var el=s.tg.el;if(!el.isConnected)return;var r=el.getBoundingClientRect(),c=s.role.col,x=r.left-2,y=r.top-2,w=r.width+4,h=r.height+4,n=10,p=(s.ph*1.3)%1;
+ g.save();g.strokeStyle='rgba('+c+',.95)';g.lineWidth=1.5;g.beginPath();[[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]].forEach(function(q){g.moveTo(q[0]+n*q[2],q[1]);g.lineTo(q[0],q[1]);g.lineTo(q[0],q[1]+n*q[3])});g.stroke();
+ g.fillStyle='rgba('+c+',.07)';g.fillRect(x,y,w,h);g.fillStyle='rgba('+c+',.75)';g.fillRect(x,y+h*p,w,1.5);
+ var m=world(s,26,0);g.setLineDash([3,4]);g.lineDashOffset=-s.ph*40;g.strokeStyle='rgba('+c+',.55)';g.lineWidth=1;g.beginPath();[[x,y],[x+w,y+h]].forEach(function(q){g.moveTo(m[0],m[1]);g.lineTo(q[0],q[1])});g.stroke();g.setLineDash([]);
+ var glyph='0123456789ABCDEF<>/#',hex='';for(var i=0;i<6;i++)hex+=glyph[Math.floor(Math.random()*glyph.length)];
+ var label=s.act?(s.act.fired?'✔ ':'▶ ')+s.act.label:s.rep?'✔ '+s.rep.t:'SCAN '+Math.min(99,Math.round((2.8-s.wait)/1.4*100))+'% '+hex;g.font='bold 10px Consolas,monospace';var tw=g.measureText(label).width+10,lx=Math.max(2,Math.min(W-tw-2,x)),ly=y>18?y-15:y+h+2;g.fillStyle='rgba(0,0,0,.9)';g.fillRect(lx,ly,tw,14);g.strokeRect(lx+.5,ly+.5,tw-1,13);g.fillStyle='rgb('+c+')';g.textBaseline='middle';g.fillText(label,lx+5,ly+7.5);g.restore()}
+function corner(cx,cy,sx,sy,R){g.strokeStyle='rgba(200,220,210,.11)';g.lineWidth=.7;g.beginPath();var N=7,i,k;for(i=0;i<N;i++){var a=i/(N-1)*Math.PI/2;g.moveTo(cx,cy);g.lineTo(cx+sx*Math.cos(a)*R,cy+sy*Math.sin(a)*R)}for(k=1;k<=6;k++){var r=R*k/6.6;for(i=0;i<N-1;i++){var a0=i/(N-1)*Math.PI/2,a1=(i+1)/(N-1)*Math.PI/2,am=(a0+a1)/2;g.moveTo(cx+sx*Math.cos(a0)*r,cy+sy*Math.sin(a0)*r);g.quadraticCurveTo(cx+sx*Math.cos(am)*r*.84,cy+sy*Math.sin(am)*r*.84,cx+sx*Math.cos(a1)*r,cy+sy*Math.sin(a1)*r)}}g.stroke()}
+var list=[],last=0,raf=0,OPT=[0,1,3,5],reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches,num=ls.spn!=null?+ls.spn:(reduce?0:innerWidth<700?1:3);
+function frame(t){raf=requestAnimationFrame(frame);var dt=Math.min(.05,(t-(last||t))/1000);last=t;g.setTransform(D,0,0,D,0,0);g.clearRect(0,0,W,H);
+ var R=Math.min(150,W*.22);corner(0,H,1,-1,R);corner(W,0,-1,1,R*.8);
+ list.forEach(function(s){brain(s,dt);gait(s,dt)});social(dt);ambient(dt);list.forEach(overlay);list.forEach(draw);list.forEach(tag);rips(dt);drawBubbles(dt)}
+function apply(){cancelAnimationFrame(raf);gen++;last=0;list=[];var base=innerWidth<700?.7:1.05;for(var i=0;i<num;i++)list.push(Spider(i,base*[1.12,.92,.8,.72,.66][i]));
+ $('spbt').textContent='🕷 '+(num?num+' laba-laba':'OFF');$('spbt').className=num?'on':'';box.style.display=num?'':'none';g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);if(num){raf=requestAnimationFrame(frame);slog('laba-laba aktif: '+list.map(function(s){return s.role.n}).join(' / '),'w');later(function(){say(list[0],'Hai bos! Aku '+list[0].role.n+' 🕷 Ketik "bantuan" atau coba: cobbe tolong cek crypto scanner')},1400)}}
+/* ===================== ASISTEN LABA-LABA ===================== */
+var gen=0,autoOn=ls.spa!=='0',amb=rnd(14,24),lastScan=0,cd={};
+function later(fn,ms){var g0=gen;setTimeout(function(){if(g0===gen)fn()},ms)}
+function pickOne(a){return a[Math.floor(Math.random()*a.length)]}
+function visEl(el){return !!el&&el.getClientRects().length>0}
+function idr(n){return Math.round(n).toLocaleString('id-ID')}
+function byRole(i){return list.filter(function(x){return x.i===i})[0]||null}
+function say(s,m,cls){if(!s)return;bubble(s,m);slog('['+s.role.n+'] '+m,cls||'')}
+function bubble(s,m,d){m=String(m);var mx=Math.min(215,W-40);g.save();g.font='11px Consolas,monospace';var words=m.split(' '),lines=[],cur='';
+ words.forEach(function(w){var t=cur?cur+' '+w:w;if(g.measureText(t).width>mx&&cur){lines.push(cur);cur=w}else cur=t});lines.push(cur);
+ var tw=0;lines.forEach(function(l){tw=Math.max(tw,g.measureText(l).width)});g.restore();
+ s.bub={m:m,lines:lines,w:tw+14,h:lines.length*13+8,t:0,d:d||Math.min(10,2.6+m.length*.055)}}
+function rrect(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function drawBubbles(dt){var placed=[];
+ list.forEach(function(s){var b=s.bub;if(!b)return;b.t+=dt;if(b.t>b.d){s.bub=null;return}
+  var a=Math.min(1,b.t*6,(b.d-b.t)*3);if(a<=0)return;
+  var x=Math.max(4,Math.min(W-b.w-4,s.x-b.w/2)),y=s.y-48*s.sc-b.h-6,tries=0;
+  var hit=function(){return placed.some(function(p){return x<p[0]+p[2]+3&&x+b.w+3>p[0]&&y<p[1]+p[3]+3&&y+b.h+3>p[1]})};
+  while(hit()&&tries<8){y-=b.h+6;tries++}
+  if(y<4)y=Math.min(H-b.h-4,s.y+42*s.sc);
+  placed.push([x,y,b.w,b.h]);
+  var c=s.role.col,below=y>s.y,tx=Math.max(x+9,Math.min(x+b.w-9,s.x));
+  g.save();g.globalAlpha=a;g.fillStyle='rgba(4,10,6,.95)';g.strokeStyle='rgba('+c+',.95)';g.lineWidth=1;
+  rrect(x,y,b.w,b.h,5);g.fill();g.stroke();
+  g.beginPath();if(!below){g.moveTo(tx-5,y+b.h);g.lineTo(s.x,s.y-30*s.sc);g.lineTo(tx+5,y+b.h)}else{g.moveTo(tx-5,y);g.lineTo(s.x,s.y+26*s.sc);g.lineTo(tx+5,y)}
+  g.fill();g.stroke();
+  g.fillStyle='rgba(4,10,6,.95)';g.fillRect(tx-4,below?y-.5:y+b.h-1.5,8,2);
+  g.font='11px Consolas,monospace';g.textBaseline='top';g.fillStyle='#e8fff0';
+  var shown=Math.floor(b.t*55),pos=0;b.lines.forEach(function(l,i){var n=Math.max(0,Math.min(l.length,shown-pos));pos+=l.length+1;g.fillText(l.slice(0,n),x+7,y+4+i*13)});
+  g.restore()})}
+function tag(s){g.save();g.font='bold 9px Consolas,monospace';var txt=s.role.n.toUpperCase()+(s.act?' ⚙':s.q.length?' …':''),w=g.measureText(txt).width+10,x=s.x-w/2,y=s.y+32*s.sc;
+ g.fillStyle='rgba(0,0,0,.75)';g.fillRect(x,y,w,12);g.strokeStyle='rgba('+s.role.col+',.65)';g.lineWidth=.8;g.strokeRect(x+.5,y+.5,w-1,11);
+ g.fillStyle='rgb('+s.role.col+')';g.textBaseline='middle';g.textAlign='center';g.fillText(txt,s.x,y+6.5);g.restore()}
+function rips(dt){list.forEach(function(s){var p=s.rip;if(!p)return;p.t+=dt;if(p.t>.8){s.rip=null;return}
+ var u=p.t/.8;g.save();g.strokeStyle='rgba('+s.role.col+','+(1-u).toFixed(2)+')';g.lineWidth=2;g.beginPath();g.arc(p.x,p.y,6+u*46,0,TAU);g.stroke();
+ g.beginPath();g.arc(p.x,p.y,3+u*20,0,TAU);g.stroke();g.restore()})}
+
+/* ---- langkah tugas ---- */
+var noop=function(){},clk=function(el){el.click()};
+var G={id:function(i){return function(){return $(i)}},q:function(sel){return function(){return document.querySelector(sel)}}};
+function A(get,label,fn,dur,silent){return{t:'act',get:get,label:label,fn:fn,dur:dur||1.1,silent:silent}}
+function SAY(m,cls){return{t:'say',m:m,cls:cls}}
+function CALL(fn){return{t:'call',fn:fn}}
+function WAIT(d){return{t:'wait',d:d}}
+function GO(who){return{t:'go',who:who}}
+function typeFn(text){return function(el){var i=0;el.value='';(function k(){i++;el.value=text.slice(0,i);el.dispatchEvent(new Event('input',{bubbles:true}));if(i<text.length)setTimeout(k,55)})()}}
+function typeDur(text){return Math.max(1.3,.9+text.length*.06)}
+function curView(){var b=document.body.classList;return b.contains('v-saham')?'saham':b.contains('v-news')?'news':'all'}
+function viewStep(want){return CALL(function(sp){var v=curView();if(v==='all'||v===want)return;
+ sp.q.unshift(A(G.q('#views button[data-v="'+want+'"]'),'KLIK ▸ '+(want==='saham'?'🇮🇩 SAHAM IDX':'📰 BERITA & CRYPTO'),clk,1.1))})}
+function runStep(s,st){
+ if(st.t==='say'){say(s,st.m,st.cls);s.hold=Math.min(3.4,.7+st.m.length*.03)}
+ else if(st.t==='wait'){s.hold=st.d}
+ else if(st.t==='call'){try{st.fn(s)}catch(e){}}
+ else if(st.t==='go'){goNear(s,st.who)}
+ else if(st.t==='act'){startAct(s,st)}}
+function goNear(s,o){var a=rnd(0,TAU);s.pt=[Math.max(40,Math.min(W-40,o.x+Math.cos(a)*85*s.sc)),Math.max(90,Math.min(H-40,o.y+Math.sin(a)*85*s.sc))];s.tg=null;s.state='walk';s.age=0;s.mv=true}
+function startAct(s,st){var el=st.get();
+ if(!visEl(el)){if(!st.silent)say(s,el?'Hmm, tombolnya belum kelihatan (tab disembunyikan?) 🤔':'Hmm, tombolnya tidak ketemu 🤔','x');return}
+ try{el.scrollIntoView({block:'center',inline:'nearest'})}catch(e){}
+ s.tg={el:el,key:keyOf(el),get:st.get};s.act={label:st.label,fn:st.fn,dur:st.dur,t:0,fired:0};s.state='walk';s.age=0;s.rep=null}
+
+/* ---- laporan dari data halaman (hanya membaca) ---- */
+function cryptoReport(){var ks=Object.keys(C);if(!ks.length)return null;var act=[];
+ Object.keys(SIG).forEach(function(k){var x=SIG[k];if(x&&!x.done&&C[k])act.push(x)});act.sort(function(a,b){return b.conf-a.conf});
+ var buy=act.filter(function(x){return x.side==='BUY'}).length,lines=[],top;
+ if(act.length){lines.push(act.length+' sinyal aktif ('+buy+' BUY / '+(act.length-buy)+' SELL) · TF '+$('tf').value);
+  act.slice(0,2).forEach(function(x){lines.push(x.k+' '+(x.side==='BUY'?'▲ BUY':'▼ SELL')+' @'+fp(x.entry)+' · TP1 '+fp(x.tp1)+' · SL '+fp(x.sl)+' · conf '+x.conf+'%')});top=act[0].k}
+ else{var tp=ks.map(function(k){return C[k]}).sort(function(a,b){return Math.abs(b.score)-Math.abs(a.score)}).slice(0,3);top=tp[0].k;
+  lines.push('Belum ada setup aktif, semua WAIT. Paling dekat: '+tp.map(function(c){return c.k+' '+(c.score>0?'+':'')+c.score.toFixed(1)+' (RSI '+c.rsi.toFixed(0)+')'}).join(', '))}
+ return{lines:lines,top:top}}
+function sahamReport(){if(!window.IDXAPI||!IDXAPI.count())return null;
+ var be=[].slice.call(document.querySelectorAll('#ixSig .sc[data-s]')),se=[].slice.call(document.querySelectorAll('#ixSell .sc[data-s]')),lines=[];
+ lines.push(be.length+' kandidat beli · '+se.length+' sinyal jual/hindari');
+ be.slice(0,2).forEach(function(el){var k=el.getAttribute('data-s'),d=IDXAPI.get(k);if(d&&d.o)lines.push(k+' ▲ BELI '+idr(d.o.p)+' ('+(d.o.chg>=0?'+':'')+(+d.o.chg).toFixed(2)+'%)'+(d.t?' · TP1 '+idr(d.t.tp1)+' · SL '+idr(d.t.sl):'')+(d.s?' · kuat '+d.s.str+'%':''))});
+ if(se[0]){var k2=se[0].getAttribute('data-s'),d2=IDXAPI.get(k2);if(d2&&d2.o)lines.push(k2+' ▼ JUAL '+idr(d2.o.p)+' ('+(d2.o.chg>=0?'+':'')+(+d2.o.chg).toFixed(2)+'%)')}
+ return{lines:lines,first:be[0]?be[0].getAttribute('data-s'):null}}
+function newsReport(){if(typeof items==='undefined'||!items.length)return null;var age=typeof maxAge==='function'?maxAge():864e5,f=items.filter(function(o){return Date.now()-o.time<=age});if(!f.length)return null;
+ var bull=0,bear=0;f.forEach(function(o){var sm=0;((o.sg||{a:[]}).a||[]).forEach(function(x){sm+=x.d});if(sm>0)bull++;else if(sm<0)bear++});
+ return{lines:[f.length+' berita ('+bull+' bullish · '+bear+' bearish)','['+(f[0].src||'news')+'] '+String(f[0].title).slice(0,115)]}}
+
+/* ---- tugas ---- */
+var T={};
+T.crypto=function(o){o=o||{};var st=[];
+ if(!o.silent)st.push(SAY('Siap! Otewe cek Crypto Scanner 🕷'));
+ if(!o.quiet)st.push(viewStep('news'));
+ st.push(A(G.id('pSg'),'MASUK ▸ CRYPTO SIGNALS',noop,.9));
+ if(o.scan!==false)st.push(A(G.id('rf'),'KLIK ▸ ⟳ SCAN',clk,1.1),SAY('Scanning 20 pair... ⏳'),WAIT(2.6));
+ st.push(CALL(function(sp){var r=cryptoReport();
+  if(!r){sp.q.unshift(SAY('Data Binance belum masuk 😕 Mungkin diblokir ISP/VPN. Coba klik SCAN lagi nanti.','x'));return}
+  var add=[A(function(){return document.querySelector('#sg .sc[data-k="'+r.top+'"]')||$('sg')},'CEK ▸ '+r.top+'/USDT',noop,1.3)];
+  r.lines.forEach(function(l){add.push(SAY(l))});sp.q=add.concat(sp.q)}));return st};
+T.saham=function(o){o=o||{};var st=[];
+ if(!o.silent)st.push(SAY('Oke! Otewe cek sinyal saham IDX 🕷'));
+ if(!o.quiet)st.push(viewStep('saham'));
+ st.push(A(G.id('ixSig'),'MASUK ▸ SINYAL SAHAM',noop,.9));
+ if(o.scan!==false)st.push(A(G.id('rf'),'KLIK ▸ ⟳ SCAN',clk,1.1),SAY('Menarik data TradingView... ⏳'),WAIT(2.6));
+ st.push(CALL(function(sp){var r=sahamReport();
+  if(!r){sp.q.unshift(SAY('Data saham belum masuk 😕 Kalau file dibuka lewat file://, coba lewat localhost/hosting.','x'));return}
+  var add=[];
+  if(r.first){var k=r.first;add.push(A(function(){return document.querySelector('#ixSig .sc[data-s="'+k+'"]')},(o.quiet?'CEK ▸ ':'BUKA ▸ ')+k,o.quiet?noop:clk,o.quiet?1.2:2.2))}
+  r.lines.forEach(function(l){add.push(SAY(l))});
+  if(r.first&&!o.quiet)add.push(A(G.id('ixX'),'TUTUP ▸ ✕',clk,.9,true));
+  sp.q=add.concat(sp.q)}));return st};
+T.news=function(o){o=o||{};var st=[];
+ if(!o.silent)st.push(SAY('Siap! Otewe cek berita terbaru 🕷'));
+ if(!o.quiet)st.push(viewStep('news'));
+ st.push(A(G.id('pNw'),'MASUK ▸ NEWS FEED',noop,.9));
+ st.push(CALL(function(sp){var r=newsReport();if(!r){sp.q.unshift(SAY('Belum ada berita yang masuk 😕 Coba klik SCAN.','x'));return}
+  var add=[A(G.q('#list .r'),'BACA ▸ berita terbaru',noop,1.3,true)];r.lines.forEach(function(l){add.push(SAY(l))});sp.q=add.concat(sp.q)}));return st};
+T.coin=function(sym){return[SAY('Oke, cek '+sym+'/USDT 🔍'),viewStep('news'),
+ A(function(){return document.querySelector('#sg .sc[data-k="'+sym+'"]')||document.querySelector('#hg .tl[data-k="'+sym+'"]')||$('sg')},'CEK ▸ '+sym,noop,1.4),
+ CALL(function(sp){var c=C[sym],q=PRICE[sym],x=SIG[sym];if(!c){sp.q.unshift(SAY(sym+': data belum masuk 😕','x'));return}
+  var l=[sym+' '+fp(q?q.p:c.p)+(q?' ('+(q.c>=0?'+':'')+q.c.toFixed(2)+'%)':'')+' → '+c.side+' conf '+c.conf+'% · RSI '+c.rsi.toFixed(0)];
+  if(x&&!x.done)l.push('Sinyal aktif '+x.side+': entry '+fp(x.entry)+' · TP1 '+fp(x.tp1)+' · SL '+fp(x.sl));else l.push('Alasan: '+c.why.slice(0,3).join(' · '));
+  sp.q=l.map(function(m){return SAY(m)}).concat(sp.q)})]};
+T.idx=function(sym){return[SAY('Oke, cek saham '+sym+' 🔍'),viewStep('saham'),
+ A(G.id('ixq'),'KETIK ▸ '+sym,typeFn(sym),typeDur(sym)),
+ A(function(){return document.querySelector('#ixAll tr[data-s="'+sym+'"]')},'BUKA ▸ '+sym,clk,2.2),
+ CALL(function(sp){var d=window.IDXAPI&&IDXAPI.get(sym);if(!d||!d.o)return;var o=d.o,l=[sym+' '+idr(o.p)+' ('+(o.chg>=0?'+':'')+(+o.chg).toFixed(2)+'%) → '+(d.s?d.s.side:'-')+(o.rsi?' · RSI '+(+o.rsi).toFixed(0):'')+(o.rvol?' · vol '+(+o.rvol).toFixed(1)+'x':'')];
+  if(d.l&&o.p>=d.l.ara&&o.chg>0)l.push('⚠ sudah di ARA');if(d.l&&o.p<=d.l.arb&&o.chg<0)l.push('⚠ sudah di ARB');
+  if(d.t)l.push('Entry '+idr(d.t.entry)+' · TP1 '+idr(d.t.tp1)+' · SL '+idr(d.t.sl)+' · '+d.n+' berita');else l.push(d.n+' berita terkait');
+  sp.q=l.map(function(m){return SAY(m)}).concat(sp.q)}),
+ A(G.id('ixX'),'TUTUP ▸ ✕',clk,.9,true),
+ CALL(function(){var e=$('ixq');e.value='';e.dispatchEvent(new Event('input',{bubbles:true}))})]};
+T.btn=function(id,label,intro,res){return[SAY(intro),A(G.id(id),'KLIK ▸ '+label,clk,1.2),WAIT(.3),CALL(function(sp){if(res)sp.q.unshift(SAY(res()))})]};
+T.sel=function(id,val,label,view){var el=$(id);var ok=[].some.call(el.options,function(o){return o.value===val||o.text===val});
+ if(!ok)return[SAY('Nilai itu tidak ada di pilihan '+label+' 🤔','x')];
+ var st=[SAY('Oke, ubah '+label+' ke '+val+' ⚙')];if(view)st.push(viewStep(view));
+ st.push(A(G.id(id),'UBAH ▸ '+label+' = '+val,function(e){e.value=val;e.dispatchEvent(new Event('change',{bubbles:true}))},1.3),WAIT(id==='tf'?2.4:.6),
+  CALL(function(sp){sp.q.unshift(SAY(label+' sekarang '+$(id).value+' ✔'))}));return st};
+T.search=function(text){return[SAY('Oke, cari "'+text+'" di berita 🔎'),viewStep('news'),A(G.id('q'),'KETIK ▸ '+text,typeFn(text),typeDur(text)),WAIT(.5),
+ CALL(function(sp){var a=document.querySelector('#list .r a'),l=[SAY('Hasil: '+$('nwi').textContent)];if(a&&$('nwi').textContent.charAt(0)!=='0')l.push(SAY('Teratas: '+a.textContent.trim().slice(0,110)));l.push(SAY('Ketik "hapus cari" kalau mau reset.'));sp.q=l.concat(sp.q)})]};
+T.clear=function(){return[SAY('Oke, bersihkan pencarian 🧹'),A(G.id('q'),'HAPUS ▸ pencarian',function(e){e.value='';e.dispatchEvent(new Event('input',{bubbles:true}));var z=$('ixq');if(z&&z.value){z.value='';z.dispatchEvent(new Event('input',{bubbles:true}))}},1.1),SAY('Pencarian sudah kosong ✔')]};
+T.tab=function(c){return[SAY('Oke, pindah ke tab '+c+' 📑'),A(G.q('#tabs button[data-c="'+c+'"]'),'KLIK ▸ TAB '+c,clk,1.1),SAY('Tab '+c+' aktif ✔')]};
+T.view=function(v){var nm=v==='all'?'▦ SEMUA':v==='saham'?'🇮🇩 SAHAM IDX':'📰 BERITA & CRYPTO';
+ return[SAY('Oke, ganti tampilan ke '+nm),A(G.q('#views button[data-v="'+v+'"]'),'KLIK ▸ '+nm,clk,1.1),SAY('Tampilan '+nm+' aktif ✔')]};
+T.watch=function(txt){return[SAY(txt?'Oke, pasang watchlist '+txt+' 👀':'Oke, kosongkan watchlist 👀'),
+ CALL(function(sp){if(!$('cfg').classList.contains('show'))sp.q.unshift(A(G.id('cfgb'),'KLIK ▸ ⚙ CONFIG',clk,1.1))}),
+ A(G.id('wl'),'KETIK ▸ watchlist',txt?typeFn(txt):function(e){e.value='';e.dispatchEvent(new Event('input',{bubbles:true}))},txt?typeDur(txt):1),
+ SAY(txt?'Watchlist aktif: '+txt+'. Sinyal & alert sekarang fokus ke aset itu ✔':'Watchlist kosong, semua aset dipantau ✔')]};
+function pipe(cur,jobs,i){
+ if(i>=jobs.length){cur.q.push(SAY('Briefing selesai ✅ Semua laporan sudah masuk.'));return}
+ var j=jobs[i],sp=j.sp;
+ function start(){T[j.fn]({silent:true}).forEach(function(x){sp.q.push(x)});sp.q.push(CALL(function(){pipe(sp,jobs,i+1)}))}
+ if(sp===cur){cur.q.push(SAY('Giliranku: '+j.label+' 🕷'));start()}
+ else{cur.q.push(SAY(sp.role.n+', tolong cek '+j.label+' ya!'));cur.q.push(CALL(function(){sp.hold=1.4;say(sp,'Oke, otewe cek! 🕷');start()}))}}
+T.team=function(leader){var cry=byRole(0),nws=byRole(1),shm=byRole(2);
+ var jobs=[{fn:'crypto',label:'crypto scanner',sp:cry||leader},{fn:'saham',label:'sinyal saham',sp:shm||leader},{fn:'news',label:'berita',sp:nws||leader}];
+ leader.q.push(SAY('Tim, waktunya briefing pasar! 📋'));pipe(leader,jobs,0)};
+
+/* ---- perintah dari kamu ---- */
+function norm(t){return String(t).toLowerCase().replace(/[^\p{L}\p{N}%\s.,\-\/:+]/gu,' ').replace(/\s+/g,' ').trim()}
+var STOP={ada:1,tolong:1,semua:1,crypto:1,saham:1,berita:1,scan:1,notif:1,suara:1,config:1,tes:1,test:1,wait:1,tab:1,view:1,cari:1,cek:1,lihat:1,harga:1,sinyal:1,yang:1,dan:1,coba:1,dong:1,ya:1,apa:1,itu:1,ini:1,webi:1,sasa:1,cobbe:1,rada:1,jaga:1,conf:1,nilai:1};
+function findSym(raw){var tk=raw.match(/[A-Za-z0-9]{2,6}/g)||[];
+ for(var i=0;i<tk.length;i++){var u=tk[i].toUpperCase(),lo=tk[i].toLowerCase();if(STOP[lo]&&tk[i]!==u)continue;
+  if(COINS.indexOf(u)>-1)return{t:'coin',s:u};if(u.length===4&&window.IDXAPI&&IDXAPI.get(u))return{t:'idx',s:u}}return null}
+function idleOne(){var best=list[0],bl=1e9;list.forEach(function(x){var l=x.q.length+(x.act?1:0)+(x.state==='idle'?0:.5);if(l<bl){bl=l;best=x}});return best}
+function stopAll(){list.forEach(function(s){s.q=[];s.act=null;s.mv=false;s.hold=0;if(s.state!=='idle'){s.state='idle';s.tg=null}});
+ var m=$('ixMod');if(m&&m.classList.contains('show')&&$('ixX'))$('ixX').click();say(idleOne(),'Oke, semua tugas dihentikan ✋','w')}
+function help(s){['Perintah (boleh sebut nama dulu, mis. "Cobbe tolong cek crypto scanner"):','• cek crypto scanner · cek saham · cek berita · cek semua','• cek BTC · cek BBCA (kode crypto / saham)','• scan · notif · suara · wait · config · tes','• tf 15m · conf 70 · nilai 20 m · tab crypto · tampilan saham','• cari <kata> · hapus cari · watchlist BTC,ETH · batal'].forEach(function(l){slog(l,'w')});
+ say(s,'Daftar perintahku ada di log ya 🕷 Mau mulai dari "cek semua"?')}
+function handle(raw){var t=norm(raw);if(!t)return;slog('Kamu: '+raw,'u');amb=Math.max(amb,25);
+ if(!list.length)return;var named=-1;ROLE.forEach(function(r,i){if(r.re.test(t))named=i});
+ var by=function(i){return list.filter(function(x){return x.i===i})[0]||null};
+ function give(pref,steps){var w=null,note=null;
+  if(named>=0){w=by(named);if(!w){w=idleOne();note=ROLE[named].n+' lagi off 😴, aku '+w.role.n+' yang kerjain ya.'}}
+  else{w=pref!=null?by(pref):null;if(!w)w=idleOne()}
+  if(note)steps.unshift(SAY(note));w.q=w.q.concat(steps)}
+ var m;
+ if(/\b(bantuan|help|menu|perintah)\b/.test(t)){help(named>=0&&by(named)||idleOne());return}
+ if(/\b(batal|stop|berhenti|cancel)\b/.test(t)){stopAll();return}
+ if(/\b(tampilan|view|layar|mode)\b/.test(t)&&(m=t.match(/\b(semua|saham|berita|crypto|news)\b/))){give(null,T.view(m[1]==='semua'?'all':m[1]==='saham'?'saham':'news'));return}
+ if(/\btab\b/.test(t)&&(m=t.match(/\b(semua|id|us|crypto|global)\b/))){give(1,T.tab(m[1].toUpperCase()));return}
+ if(/\b(hapus|reset|bersihkan|clear)\b.*\b(watchlist|wl)\b/.test(t)){give(4,T.watch(''));return}
+ if(m=raw.match(/watchlist\s*[:=]?\s*(.*)$/i)){var wl=m[1].toUpperCase().replace(/[^A-Z0-9, ]/g,' ').trim().replace(/[\s,]+/g,',');
+  if(!wl){say(named>=0&&by(named)||idleOne(),'Mau watchlist apa? Contoh: watchlist BTC,ETH,BBCA');return}give(4,T.watch(wl));return}
+ if(/\b(hapus|reset|bersihkan|clear)\b.*\b(cari|pencarian|filter|search)\b/.test(t)){give(1,T.clear());return}
+ if(m=raw.match(/\b(?:cari|search|temukan)\s+(?:berita\s+)?(.+)$/i)){give(1,T.search(m[1].trim().slice(0,40)));return}
+ if((m=t.match(/\b(5m|15m|1h|4h)\b/))&&(/\b(tf|timeframe)\b/.test(t)||/^(5m|15m|1h|4h)$/.test(t))){give(0,T.sel('tf',m[1],'TF','news'));return}
+ if(m=t.match(/\bconf(?:idence)?\b\s*(?:>=|≥)?\s*(40|55|70)\b/)){give(0,T.sel('mc',m[1],'confidence','news'));return}
+ if(m=t.match(/\bnilai\b\s*(?:>=|≥)?\s*(1|5|20|100)\s*m\b/)){give(2,T.sel('ixLiq',String(+m[1]*1e9),'nilai transaksi','saham'));return}
+ if(/\bnotif/.test(t)){give(null,T.btn('bn','🔔 Notifikasi','Oke, aku tekan tombol Notifikasi 🔔',function(){return 'Kalau browser minta izin, klik Allow ya. Status: '+(window.Notification?Notification.permission:'tidak didukung')}));return}
+ if(/\b(suara|sound|bunyi|mute|unmute)\b/.test(t)){give(null,T.btn('bs','🔊 Suara','Oke, aku tekan tombol Suara 🔊',function(){return 'Sekarang: '+$('bs').textContent}));return}
+ if(/\b(config|konfig|setelan|pengaturan)\b/.test(t)){give(null,T.btn('cfgb','⚙ CONFIG','Oke, buka/tutup panel Config ⚙',function(){return 'Panel config '+($('cfg').classList.contains('show')?'terbuka':'tertutup')+' ✔'}));return}
+ if(/\bwait\b/.test(t)){give(0,T.btn('sww','WAIT','Oke, aku tekan tombol WAIT',function(){return 'Kartu WAIT sekarang '+($('sww').className==='on'?'ditampilkan':'disembunyikan')+' ✔'}));return}
+ if(/\b(tes|test|uji)\b/.test(t)){give(null,T.btn('ts','🧪 TES','Oke, kirim alert tes 🧪',function(){return 'Alert tes terkirim, cek toast & log ✔'}));return}
+ var sy=findSym(raw);if(sy){give(sy.t==='coin'?0:2,sy.t==='coin'?T.coin(sy.s):T.idx(sy.s));return}
+ var topic=/(crypto|kripto|binance|koin|coin|scanner)/.test(t)?'crypto':/(saham|idx|ihsg|bursa|emiten)/.test(t)?'saham':/(berita|news|kabar|headline)/.test(t)?'news':'';
+ if(!topic&&/\b(semua|briefing|laporan|tim|team)\b/.test(t)){var ld=(named>=0&&by(named))||by(1)||list[0];T.team(ld);return}
+ if(topic==='crypto'){give(0,T.crypto());return}
+ if(topic==='saham'){give(2,T.saham());return}
+ if(topic==='news'){give(1,T.news());return}
+ if(/\b(scan|refresh|segarkan|perbarui|muat ulang)\b/.test(t)){give(null,T.btn('rf','⟳ SCAN','Siap! Aku tekan tombol SCAN ⟳',function(){return 'Scan dijalankan ✔ Berita, crypto & saham sedang diperbarui.'}));return}
+ var me=(named>=0&&by(named))||idleOne();
+ if(/\b(hai|halo|hi|hello|hey|pagi|siang|sore|malam)\b/.test(t)||named>=0&&t.split(' ').length<=2){
+  say(me,pickOne(['Hai bos! 🕷 Ada tugas? Ketik "bantuan" kalau lupa perintah.','Halo! Siap bantu. Coba: "cek crypto scanner" 🕸']));
+  list.forEach(function(x){if(x!==me&&Math.random()<.7)later(function(){say(x,pickOne(['Halo bos! 👋','Hai! 🕷','Siap bertugas!']))},700+Math.random()*900)});return}
+ say(me,'Hmm, aku belum paham 🤔 Ketik "bantuan" buat lihat perintahku.','w')}
+
+/* ---- ngobrol & kerja sendiri (AUTO) ---- */
+function sceneHello(){if(list.length<2)return false;var a=pickOne(list),b;do{b=pickOne(list)}while(b===a);
+ a.q.push(GO(b),SAY(pickOne(['Hai '+b.role.n+'! 👋','Halo '+b.role.n+', lagi pantau apa?','Psst '+b.role.n+', pasarnya rame nih!'])),
+  CALL(function(){later(function(){say(b,pickOne(['Hai '+a.role.n+'! Lagi jaga '+b.role.tag.toLowerCase()+', aman 👍','Halo '+a.role.n+'! Semangat ya 🕷','Hai hai! Nanti aku kabari kalau ada yang aneh.']))},1000)}));return true}
+function sceneDelegate(){var cry=byRole(0),nws=byRole(1),shm=byRole(2),opts=[];
+ var vc=visEl($('pSg')),vs=visEl($('ixSig')),vn=visEl($('pNw'));
+ if(nws&&cry&&vc)opts.push([nws,cry,'crypto scanner','crypto']);
+ if(nws&&shm&&vs)opts.push([nws,shm,'sinyal saham','saham']);
+ if(shm&&nws&&vn)opts.push([shm,nws,'berita terbaru','news']);
+ if(cry&&shm&&vs)opts.push([cry,shm,'sinyal saham','saham']);
+ if(!opts.length)return false;var p=pickOne(opts),a=p[0],b=p[1],lbl=p[2],fn=p[3];
+ a.q.push(GO(b),SAY(b.role.n+', tolong cek '+lbl+' ya!'),CALL(function(){b.hold=1.2;say(b,pickOne(['Oke, otewe cek! 🕷','Siap, otewe cek!']));
+  var o={quiet:true,silent:true,scan:(fn!=='news'&&Date.now()-lastScan>9e4)};
+  T[fn](o).forEach(function(x){b.q.push(x)});
+  b.q.push(CALL(function(){say(b,'Beres, '+a.role.n+'! 👍');later(function(){say(a,'Makasih, '+b.role.n+'! 🕸')},1200)}))}));return true}
+function sceneSolo(){var s=list[0];s.q.push(SAY(pickOne(['Lagi patroli, semua aman 🕷','Ngecek-ngecek dulu ya...','Jaring sudah dipasang, siap pantau!'])));return true}
+function ambient(dt){if(!autoOn||!list.length)return;amb-=dt;if(amb>0)return;amb=rnd(35,70);
+ if(list.some(function(s){return s.q.length||s.act||s.bub}))return;
+ if(list.length<2){sceneSolo();return}
+ if(Math.random()<.55&&sceneDelegate())return;sceneHello()}
+function social(dt){if(!autoOn||list.length<2)return;
+ for(var i=0;i<list.length;i++)for(var j=i+1;j<list.length;j++){(function(a,b,k){cd[k]=(cd[k]===undefined?rnd(8,25):cd[k])-dt;if(cd[k]>0)return;
+  if(Math.hypot(a.x-b.x,a.y-b.y)<135*(a.sc+b.sc)/2&&!a.bub&&!b.bub&&!a.act&&!b.act&&!a.q.length&&!b.q.length){cd[k]=rnd(50,95);
+   say(a,pickOne(['Hai ','Halo ','Psst, '])+b.role.n+'! 👋');later(function(){say(b,pickOne(['Hai '+a.role.n+'!','Halo '+a.role.n+' 🕷','Yo '+a.role.n+'!']))},1100)}})(list[i],list[j],i+'-'+j)}}
+
+/* ---- alert halaman -> laba-laba ikut bicara ---- */
+if(typeof window.notify==='function'&&!window.notify.__sp){var _n=window.notify;window.notify=function(title,body,link){_n.apply(this,arguments);
+ try{if(!list.length)return;var ti=String(title||''),i=/USDT|BUY|SELL|BTC|ETH/.test(ti)?0:/saham|IDX|ARA|ARB|UMA/i.test(ti)?2:1,sp=byRole(i)||list[0];say(sp,'🚨 '+ti+(body?' — '+String(body).slice(0,90):''),'w')}catch(e){}};window.notify.__sp=1}
+$('rf').addEventListener('click',function(){lastScan=Date.now()});
+
+/* ---- UI chat ---- */
+function setAuto(){var e=$('spauto');e.className=autoOn?'on':'';e.textContent=autoOn?'AUTO ON':'AUTO OFF'}
+$('spauto').onclick=function(e){e.stopPropagation();autoOn=!autoOn;ls.spa=autoOn?'1':'0';setAuto();slog(autoOn?'AUTO ON: laba-laba ngobrol & kerja sendiri':'AUTO OFF: laba-laba hanya patroli & menunggu perintah','w')};setAuto();
+$('spch').innerHTML=['Cobbe cek crypto scanner','Sasa cek saham','Webi cek berita','cek semua','scan','bantuan'].map(function(c){return '<button data-c="'+c+'">'+c+'</button>'}).join('');
+$('spch').onclick=function(e){var c=e.target.getAttribute&&e.target.getAttribute('data-c');if(c)handle(c)};
+$('spsend').onclick=function(){var i=$('spq'),v=i.value;i.value='';handle(v)};
+$('spq').onkeydown=function(e){if(e.key==='Enter')$('spsend').onclick()};
+
+$('spbt').onclick=function(){num=OPT[(OPT.indexOf(num)+1)%OPT.length];ls.spn=num;apply()};apply();
+})();
+</script></body></html>
